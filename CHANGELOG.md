@@ -1,8 +1,3 @@
-# Change Log
-
-All notable changes to this project will be documented in this file.
-See [Conventional Commits](https://conventionalcommits.org) for commit guidelines.
-
 # [8.0.0-alpha.1](https://github.com/ionic-team/capacitor-plugins/compare/@capacitor/keyboard@7.0.3...@capacitor/keyboard@8.0.0-alpha.1) (2025-09-08)
 
 **Note:** Version bump only for package @capacitor/keyboard
