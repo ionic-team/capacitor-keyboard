@@ -3,7 +3,7 @@ name: "[TEMPORARY] Test native Android and iOS Plugin release pipeline"
 on:
   push:
     branches:
-      - test/RMET-4491/publish-pipelines
+      - test/RMET-4490/publish-pipelines
 jobs:
   setup:
     uses: ./.github/workflows/reusable_setup.yml
