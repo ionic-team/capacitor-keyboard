@@ -134,7 +134,7 @@ export enum KeyboardResize {
 
 export interface KeyboardPlugin {
   /**
-   * Show the keyboard. This method is alpha and may have issues.
+   * Show the keyboard.
    *
    * This method is only supported on Android.
    *
