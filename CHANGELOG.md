@@ -1,3 +1,15 @@
+# [8.0.0-next.1](https://github.com/ionic-team/capacitor-keyboard/compare/v7.0.3...v8.0.0-next.1) (2025-09-24)
+
+
+### feature
+
+* Capacitor 8 support ([f8c21ef](https://github.com/ionic-team/capacitor-keyboard/commit/f8c21ef521de3ae9c8fda8aae52dac2c4b8343e7))
+
+
+### BREAKING CHANGES
+
+* Capacitor 8 requires major update
+
 # [8.0.0-alpha.1](https://github.com/ionic-team/capacitor-plugins/compare/@capacitor/keyboard@7.0.3...@capacitor/keyboard@8.0.0-alpha.1) (2025-09-08)
 
 **Note:** Version bump only for package @capacitor/keyboard
