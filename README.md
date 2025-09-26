@@ -119,7 +119,7 @@ the following events also work with `window.addEventListener`:
 show() => Promise<void>
 ```
 
-Show the keyboard. This method is alpha and may have issues.
+Show the keyboard.
 
 This method is only supported on Android.
 
