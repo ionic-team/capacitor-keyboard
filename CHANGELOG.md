@@ -1,3 +1,10 @@
+# [8.0.0-next.2](https://github.com/ionic-team/capacitor-keyboard/compare/v8.0.0-next.1...v8.0.0-next.2) (2025-11-10)
+
+
+### Bug Fixes
+
+* **android:** use 'propName = value' assignment syntax in build.gradle files ([37b39b0](https://github.com/ionic-team/capacitor-keyboard/commit/37b39b0c649ee9fb803d05accbb8a5160f10f7b5))
+
 # [8.0.0-next.1](https://github.com/ionic-team/capacitor-keyboard/compare/v7.0.3...v8.0.0-next.1) (2025-09-24)
 
 
