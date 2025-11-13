@@ -57,6 +57,16 @@ public class Keyboard {
         FrameLayout content = activity.getWindow().getDecorView().findViewById(android.R.id.content);
         rootView = content.getRootView();
 
+      ViewCompat.setOnApplyWindowInsetsListener(rootView, (v, insets) -> {
+        boolean showingKeyboard = ViewCompat.getRootWindowInsets(rootView).isVisible(WindowInsetsCompat.Type.ime());
+
+        if (showingKeyboard && resizeOnFullScreen) {
+          possiblyResizeChildOfContent(true);
+        }
+
+        return insets;
+      });
+
         ViewCompat.setWindowInsetsAnimationCallback(
             rootView,
             new WindowInsetsAnimationCompat.Callback(WindowInsetsAnimationCompat.Callback.DISPATCH_MODE_STOP) {
