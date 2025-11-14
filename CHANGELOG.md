@@ -1,3 +1,10 @@
+# [8.0.0-next.3](https://github.com/ionic-team/capacitor-keyboard/compare/v8.0.0-next.2...v8.0.0-next.3) (2025-11-14)
+
+
+### Bug Fixes
+
+* **android:** Adjust WebView sizing during keyboard size changes ([ae75247](https://github.com/ionic-team/capacitor-keyboard/commit/ae752478ffece97f2693e9f323ec9be8f3cae8bd))
+
 # [8.0.0-next.2](https://github.com/ionic-team/capacitor-keyboard/compare/v8.0.0-next.1...v8.0.0-next.2) (2025-11-10)
 
 
