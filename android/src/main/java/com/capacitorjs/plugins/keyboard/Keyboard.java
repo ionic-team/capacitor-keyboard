@@ -115,6 +115,13 @@ public class Keyboard {
         frameLayoutParams = (FrameLayout.LayoutParams) mChildOfContent.getLayoutParams();
     }
 
+    public void destroy() {
+        if (rootView != null) {
+            ViewCompat.setWindowInsetsAnimationCallback(rootView, null);
+            rootView = null;
+        }
+    }
+
     public void show() {
         ((InputMethodManager) activity.getSystemService(Context.INPUT_METHOD_SERVICE)).showSoftInput(activity.getCurrentFocus(), 0);
     }
