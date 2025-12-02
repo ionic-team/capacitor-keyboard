@@ -47,7 +47,7 @@ declare module '@capacitor/cli' {
 
 export interface KeyboardInfo {
   /**
-   * Height of the heyboard.
+   * Height of the keyboard.
    *
    * @since 1.0.0
    */
