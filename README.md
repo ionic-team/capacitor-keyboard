@@ -119,7 +119,7 @@ the following events also work with `window.addEventListener`:
 show() => Promise<void>
 ```
 
-Show the keyboard. This method is alpha and may have issues.
+Show the keyboard.
 
 This method is only supported on Android.
 
@@ -364,7 +364,7 @@ Remove all native listeners for this plugin.
 
 | Prop                 | Type                | Description             | Since |
 | -------------------- | ------------------- | ----------------------- | ----- |
-| **`keyboardHeight`** | <code>number</code> | Height of the heyboard. | 1.0.0 |
+| **`keyboardHeight`** | <code>number</code> | Height of the keyboard. | 1.0.0 |
 
 
 ### Enums

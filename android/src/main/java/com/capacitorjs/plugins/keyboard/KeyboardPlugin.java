@@ -15,42 +15,36 @@ public class KeyboardPlugin extends Plugin {
 
     @Override
     public void load() {
-        execute(
-            () -> {
-                boolean resizeOnFullScreen = getConfig().getBoolean("resizeOnFullScreen", false);
-                implementation = new Keyboard(getBridge(), resizeOnFullScreen);
+        execute(() -> {
+            boolean resizeOnFullScreen = getConfig().getBoolean("resizeOnFullScreen", false);
+            implementation = new Keyboard(getBridge(), resizeOnFullScreen);
 
-                implementation.setKeyboardEventListener(this::onKeyboardEvent);
-            }
-        );
+            implementation.setKeyboardEventListener(this::onKeyboardEvent);
+        });
     }
 
     @PluginMethod
     public void show(final PluginCall call) {
-        execute(
-            () ->
-                new Handler(Looper.getMainLooper())
-                    .postDelayed(
-                        () -> {
-                            implementation.show();
-                            call.resolve();
-                        },
-                        350
-                    )
+        execute(() ->
+            new Handler(Looper.getMainLooper()).postDelayed(
+                () -> {
+                    implementation.show();
+                    call.resolve();
+                },
+                350
+            )
         );
     }
 
     @PluginMethod
     public void hide(final PluginCall call) {
-        execute(
-            () -> {
-                if (!implementation.hide()) {
-                    call.reject("Can't close keyboard, not currently focused");
-                } else {
-                    call.resolve();
-                }
+        execute(() -> {
+            if (!implementation.hide()) {
+                call.reject("Can't close keyboard, not currently focused");
+            } else {
+                call.resolve();
             }
-        );
+        });
     }
 
     @PluginMethod

@@ -47,7 +47,7 @@ declare module '@capacitor/cli' {
 
 export interface KeyboardInfo {
   /**
-   * Height of the heyboard.
+   * Height of the keyboard.
    *
    * @since 1.0.0
    */
@@ -133,7 +133,7 @@ export enum KeyboardResize {
 
 export interface KeyboardPlugin {
   /**
-   * Show the keyboard. This method is alpha and may have issues.
+   * Show the keyboard.
    *
    * This method is only supported on Android.
    *
@@ -201,10 +201,7 @@ export interface KeyboardPlugin {
    *
    * @since 1.0.0
    */
-  addListener(
-    eventName: 'keyboardWillShow',
-    listenerFunc: (info: KeyboardInfo) => void,
-  ): Promise<PluginListenerHandle>;
+  addListener(eventName: 'keyboardWillShow', listenerFunc: (info: KeyboardInfo) => void): Promise<PluginListenerHandle>;
 
   /**
    * Listen for when the keyboard is shown.
@@ -213,10 +210,7 @@ export interface KeyboardPlugin {
    *
    * @since 1.0.0
    */
-  addListener(
-    eventName: 'keyboardDidShow',
-    listenerFunc: (info: KeyboardInfo) => void,
-  ): Promise<PluginListenerHandle>;
+  addListener(eventName: 'keyboardDidShow', listenerFunc: (info: KeyboardInfo) => void): Promise<PluginListenerHandle>;
 
   /**
    * Listen for when the keyboard is about to be hidden.
@@ -225,10 +219,7 @@ export interface KeyboardPlugin {
    *
    * @since 1.0.0
    */
-  addListener(
-    eventName: 'keyboardWillHide',
-    listenerFunc: () => void,
-  ): Promise<PluginListenerHandle>;
+  addListener(eventName: 'keyboardWillHide', listenerFunc: () => void): Promise<PluginListenerHandle>;
 
   /**
    * Listen for when the keyboard is hidden.
@@ -237,10 +228,7 @@ export interface KeyboardPlugin {
    *
    * @since 1.0.0
    */
-  addListener(
-    eventName: 'keyboardDidHide',
-    listenerFunc: () => void,
-  ): Promise<PluginListenerHandle>;
+  addListener(eventName: 'keyboardDidHide', listenerFunc: () => void): Promise<PluginListenerHandle>;
 
   /**
    * Remove all native listeners for this plugin.
