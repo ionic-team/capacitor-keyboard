@@ -57,6 +57,16 @@ public class Keyboard {
         FrameLayout content = activity.getWindow().getDecorView().findViewById(android.R.id.content);
         rootView = content.getRootView();
 
+        ViewCompat.setOnApplyWindowInsetsListener(rootView, (v, insets) -> {
+            boolean showingKeyboard = ViewCompat.getRootWindowInsets(rootView).isVisible(WindowInsetsCompat.Type.ime());
+
+            if (showingKeyboard && resizeOnFullScreen) {
+                possiblyResizeChildOfContent(true);
+            }
+
+            return insets;
+        });
+
         ViewCompat.setWindowInsetsAnimationCallback(
             rootView,
             new WindowInsetsAnimationCompat.Callback(WindowInsetsAnimationCompat.Callback.DISPATCH_MODE_STOP) {
@@ -142,36 +152,7 @@ public class Keyboard {
     private int computeUsableHeight() {
         Rect r = new Rect();
         mChildOfContent.getWindowVisibleDisplayFrame(r);
-        if (shouldApplyEdgeToEdgeAdjustments()) {
-            WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(rootView);
-            if (insets != null) {
-                int systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars()).bottom;
-                if (systemBars > 0) {
-                    return r.bottom + systemBars;
-                }
-            }
-        }
-
         return isOverlays() ? r.bottom : r.height();
-    }
-
-    private boolean shouldApplyEdgeToEdgeAdjustments() {
-        var adjustMarginsForEdgeToEdge = this.bridge == null ? "auto" : this.bridge.getConfig().adjustMarginsForEdgeToEdge();
-        if (adjustMarginsForEdgeToEdge.equals("force")) { // Force edge-to-edge adjustments regardless of app settings
-            return true;
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.VANILLA_ICE_CREAM && adjustMarginsForEdgeToEdge.equals("auto")) { // Auto means that we need to check the app's edge-to-edge preference
-            TypedValue value = new TypedValue();
-            boolean optOutAttributeExists = activity
-                .getTheme()
-                .resolveAttribute(android.R.attr.windowOptOutEdgeToEdgeEnforcement, value, true);
-
-            if (!optOutAttributeExists) { // Default is to apply edge to edge
-                return true;
-            } else {
-                return value.data == 0;
-            }
-        }
-        return false;
     }
 
     @SuppressWarnings("deprecation")

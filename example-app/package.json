@@ -1,0 +1,50 @@
+{
+  "name": "CAP-KEYB-SAMPLE",
+  "private": true,
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "test.e2e": "cypress run",
+    "test.unit": "vitest"
+  },
+  "dependencies": {
+    "@capacitor/android": "next",
+    "@capacitor/app": "next",
+    "@capacitor/keyboard": "file:../",
+    "@capacitor/ios": "next",
+    "@ionic/react": "^8.7.11",
+    "@ionic/react-router": "^8.7.11",
+    "@types/react-router": "^5.1.20",
+    "@types/react-router-dom": "^5.3.3",
+    "ionicons": "^8.0.13",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router": "^5.3.4",
+    "react-router-dom": "^5.3.4"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "next",
+    "@testing-library/dom": ">=7.21.4",
+    "@testing-library/jest-dom": "^5.16.5",
+    "@testing-library/react": "^16.2.0",
+    "@testing-library/user-event": "^14.4.3",
+    "@types/react": "^19.2.7",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-legacy": "^7.2.1",
+    "@vitejs/plugin-react": "^5.1.1",
+    "cypress": "^13.5.0",
+    "globals": "^16.5.0",
+    "jsdom": "^22.1.0",
+    "terser": "^5.44.1",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.4",
+    "vitest": "^0.34.6"
+  },
+  "overrides": {
+    "rollup": "4.44.0"
+  },
+  "description": "An Ionic project"
+}

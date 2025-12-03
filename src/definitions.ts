@@ -80,10 +80,9 @@ export enum KeyboardStyle {
   Light = 'LIGHT',
 
   /**
-   * On iOS 13 and newer the keyboard style is based on the device appearance.
+   * The keyboard style is based on the device appearance.
    * If the device is using Dark mode, the keyboard will be dark.
    * If the device is using Light mode, the keyboard will be light.
-   * On iOS 12 the keyboard will be light.
    *
    * @since 1.0.0
    */
@@ -202,10 +201,7 @@ export interface KeyboardPlugin {
    *
    * @since 1.0.0
    */
-  addListener(
-    eventName: 'keyboardWillShow',
-    listenerFunc: (info: KeyboardInfo) => void,
-  ): Promise<PluginListenerHandle>;
+  addListener(eventName: 'keyboardWillShow', listenerFunc: (info: KeyboardInfo) => void): Promise<PluginListenerHandle>;
 
   /**
    * Listen for when the keyboard is shown.
@@ -214,10 +210,7 @@ export interface KeyboardPlugin {
    *
    * @since 1.0.0
    */
-  addListener(
-    eventName: 'keyboardDidShow',
-    listenerFunc: (info: KeyboardInfo) => void,
-  ): Promise<PluginListenerHandle>;
+  addListener(eventName: 'keyboardDidShow', listenerFunc: (info: KeyboardInfo) => void): Promise<PluginListenerHandle>;
 
   /**
    * Listen for when the keyboard is about to be hidden.
@@ -226,10 +219,7 @@ export interface KeyboardPlugin {
    *
    * @since 1.0.0
    */
-  addListener(
-    eventName: 'keyboardWillHide',
-    listenerFunc: () => void,
-  ): Promise<PluginListenerHandle>;
+  addListener(eventName: 'keyboardWillHide', listenerFunc: () => void): Promise<PluginListenerHandle>;
 
   /**
    * Listen for when the keyboard is hidden.
@@ -238,10 +228,7 @@ export interface KeyboardPlugin {
    *
    * @since 1.0.0
    */
-  addListener(
-    eventName: 'keyboardDidHide',
-    listenerFunc: () => void,
-  ): Promise<PluginListenerHandle>;
+  addListener(eventName: 'keyboardDidHide', listenerFunc: () => void): Promise<PluginListenerHandle>;
 
   /**
    * Remove all native listeners for this plugin.

@@ -1,0 +1,7 @@
+{
+  "name": "CAP-KEYB-SAMPLE",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "react-vite"
+}
