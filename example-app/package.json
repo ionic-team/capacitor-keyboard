@@ -11,10 +11,10 @@
     "test.unit": "vitest"
   },
   "dependencies": {
-    "@capacitor/android": "next",
-    "@capacitor/app": "next",
+    "@capacitor/android": "^8.0.0",
+    "@capacitor/app": "^8.0.0",
     "@capacitor/keyboard": "file:../",
-    "@capacitor/ios": "next",
+    "@capacitor/ios": "^8.0.0",
     "@ionic/react": "^8.7.11",
     "@ionic/react-router": "^8.7.11",
     "@types/react-router": "^5.1.20",
@@ -26,7 +26,7 @@
     "react-router-dom": "^5.3.4"
   },
   "devDependencies": {
-    "@capacitor/cli": "next",
+    "@capacitor/cli": "^8.0.0",
     "@testing-library/dom": ">=7.21.4",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^16.2.0",
