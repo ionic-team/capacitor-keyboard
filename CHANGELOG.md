@@ -1,3 +1,21 @@
+# [8.0.0](https://github.com/ionic-team/capacitor-keyboard/compare/v7.0.3...v8.0.0) (2025-12-08)
+
+
+### Bug Fixes
+
+* **android:** Adjust WebView sizing during keyboard size changes ([ae75247](https://github.com/ionic-team/capacitor-keyboard/commit/ae752478ffece97f2693e9f323ec9be8f3cae8bd))
+* **android:** use 'propName = value' assignment syntax in build.gradle files ([37b39b0](https://github.com/ionic-team/capacitor-keyboard/commit/37b39b0c649ee9fb803d05accbb8a5160f10f7b5))
+
+
+### feature
+
+* Capacitor 8 support ([f8c21ef](https://github.com/ionic-team/capacitor-keyboard/commit/f8c21ef521de3ae9c8fda8aae52dac2c4b8343e7))
+
+
+### BREAKING CHANGES
+
+* Capacitor 8 requires major update
+
 # [8.0.0-next.4](https://github.com/ionic-team/capacitor-keyboard/compare/v8.0.0-next.3...v8.0.0-next.4) (2025-11-17)
 
 * **ios:** Minor updates to Package.swift
