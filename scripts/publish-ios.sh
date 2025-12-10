@@ -23,7 +23,7 @@ publish_plugin_ios () {
     fi
 
     # check if version already exists in Trunk
-    if pod trunk info "$POD_NAME" 2>/dev/null | grep -q " - $PLUGIN_VERSION"; then
+    if pod trunk info "$POD_NAME" 2>/dev/null | grep -q " - $PLUGIN_VERSION ("; then
         printf %"s\n\n" "Duplicate: a published plugin $PLUGIN_NAME exists for version $PLUGIN_VERSION, skipping..."
         return
     fi
