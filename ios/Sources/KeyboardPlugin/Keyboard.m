@@ -39,6 +39,7 @@ typedef enum : NSUInteger {
 @property (nonatomic, readwrite) ResizePolicy keyboardResizes;
 @property (readwrite, assign, nonatomic) NSString* keyboardStyle;
 @property (nonatomic, readwrite) int paddingBottom;
+@property (nonatomic) NSTimeInterval lastFullDismissalTime;
 
 @end
 
@@ -92,6 +93,8 @@ double stageManagerOffset;
   [nc addObserver:self selector:@selector(onKeyboardDidShow:) name:UIKeyboardDidShowNotification object:nil];
   [nc addObserver:self selector:@selector(onKeyboardWillHide:) name:UIKeyboardWillHideNotification object:nil];
   [nc addObserver:self selector:@selector(onKeyboardWillShow:) name:UIKeyboardWillShowNotification object:nil];
+  [nc addObserver:self selector:@selector(onKeyboardWillChangeFrame:) name:UIKeyboardWillChangeFrameNotification object:nil];
+  [nc addObserver:self selector:@selector(onKeyboardDidChangeFrame:) name:UIKeyboardDidChangeFrameNotification object:nil];
   
   [nc removeObserver:self.webView name:UIKeyboardWillHideNotification object:nil];
   [nc removeObserver:self.webView name:UIKeyboardWillShowNotification object:nil];
@@ -129,17 +132,27 @@ double stageManagerOffset;
   double height = rect.size.height;
     
   if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad) {
-    if (stageManagerOffset > 0) {
-      height = stageManagerOffset;
-    } else {
-      CGRect webViewAbsolute = [self.webView convertRect:self.webView.frame toCoordinateSpace:self.webView.window.screen.coordinateSpace];
-      height = (webViewAbsolute.size.height + webViewAbsolute.origin.y) - (UIScreen.mainScreen.bounds.size.height - rect.size.height);
+                CGFloat screenHeight = UIScreen.mainScreen.bounds.size.height;
+                CGFloat keyboardTop = CGRectGetMinY(rect);
+                CGFloat keyboardBottom = CGRectGetMaxY(rect);
+                CGFloat keyboardFrameHeight = rect.size.height;
+          
+                // Check if this is a full keyboard or just accessory bar
+                // Full keyboard is typically > 250px, accessory bar is < 200px
+                if (keyboardFrameHeight > 200) {
+                    // Full keyboard - calculate from screen position
+                    // This handles Stage Manager and different window positions correctly
+                    height = screenHeight - keyboardTop;
+                } else {
+                    // Accessory bar only - use the actual frame height
+                    height = keyboardFrameHeight;
+                }
+          NSLog(@"KeyboardPlugin: onKeyboardWillShow - iPad mode, keyboardTop=%.1f, keyboardBottom=%.1f, keyboardFrameHeight=%.1f, screenHeight=%.1f, calculated height=%.1f", keyboardTop, keyboardBottom, keyboardFrameHeight, screenHeight, height);
+      
       if (height < 0) {
         height = 0;
       }
         
-      stageManagerOffset = height;
-    }
   }
 
   double duration = [[notification.userInfo valueForKey:UIKeyboardAnimationDurationUserInfoKey] doubleValue]+0.2;
@@ -156,6 +169,23 @@ double stageManagerOffset;
 {
   CGRect rect = [[notification.userInfo valueForKey:UIKeyboardFrameEndUserInfoKey] CGRectValue];
   double height = rect.size.height;
+  
+  if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad) {
+      CGFloat screenHeight = UIScreen.mainScreen.bounds.size.height;
+      CGFloat keyboardTop = CGRectGetMinY(rect);
+      CGFloat keyboardFrameHeight = rect.size.height;
+      
+      
+      if (keyboardFrameHeight > 200) {
+          height = screenHeight - keyboardTop;
+      } else {
+          height = keyboardFrameHeight;
+      }
+      
+      if (height < 0) {
+        height = 0;
+      }
+  }
 
   [self resetScrollView];
 
@@ -172,6 +202,87 @@ double stageManagerOffset;
   [self resetScrollView];
 
   stageManagerOffset = 0;
+}
+
+- (void)onKeyboardWillChangeFrame:(NSNotification *)notification
+{
+    CGRect rect = [[notification.userInfo valueForKey:UIKeyboardFrameEndUserInfoKey] CGRectValue];
+    
+    // Check if keyboard is actually on screen (not moving off-screen)
+    CGFloat screenHeight = UIScreen.mainScreen.bounds.size.height;
+    BOOL keyboardOnScreen = CGRectGetMinY(rect) < screenHeight;
+    
+    CGFloat keyboardTop = CGRectGetMinY(rect);
+    CGFloat keyboardFrameHeight = rect.size.height;
+    
+    // Detect full dismissal
+    if (keyboardTop >= screenHeight) {
+        self.lastFullDismissalTime = [[NSDate date] timeIntervalSince1970];
+    }
+    
+    // Ignore accessory bar if it appears within 0.5s of full dismissal
+    NSTimeInterval timeSinceFullDismissal = [[NSDate date] timeIntervalSince1970] - self.lastFullDismissalTime;
+    if (keyboardFrameHeight < 200 && timeSinceFullDismissal < 0.5) {
+        return;
+    }
+
+    
+    double height = rect.size.height;
+    
+    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad) {
+        CGFloat keyboardTop = CGRectGetMinY(rect);
+        CGFloat keyboardBottom = CGRectGetMaxY(rect);
+        CGFloat keyboardFrameHeight = rect.size.height;
+        
+        // Distinguish between full keyboard and accessory bar by frame height
+        if (keyboardFrameHeight > 200) {
+            // Full keyboard - calculate from screen position for Stage Manager support
+            height = screenHeight - keyboardTop;
+        } else {
+            // Accessory bar only - during transitions, iOS reports incorrect sizes
+            // Skip WillChangeFrame for small keyboards, wait for DidShow with stable value
+            return;
+        }
+        
+        if (height < 0) height = 0;
+        
+    }
+    
+    double duration = [[notification.userInfo valueForKey:UIKeyboardAnimationDurationUserInfoKey] doubleValue];
+    NSLog(@"KeyboardPlugin: onKeyboardWillChangeFrame - setting height=%d with duration=%.2f", (int)height, duration);
+    [self setKeyboardHeight:height delay:duration];
+    [self resetScrollView];
+    
+    NSString *data = [NSString stringWithFormat:@"{ 'keyboardHeight': %d }", (int)height];
+    [self.bridge triggerWindowJSEventWithEventName:@"keyboardWillChangeFrame" data:data];
+    NSDictionary *kbData = @{@"keyboardHeight": [NSNumber numberWithDouble:height]};
+    [self notifyListeners:@"keyboardWillChangeFrame" data:kbData];
+}
+
+- (void)onKeyboardDidChangeFrame:(NSNotification *)notification
+{
+    CGRect rect = [[notification.userInfo valueForKey:UIKeyboardFrameEndUserInfoKey] CGRectValue];
+    double height = rect.size.height;
+    
+    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad) {
+        CGFloat screenHeight = UIScreen.mainScreen.bounds.size.height;
+        CGFloat keyboardTop = CGRectGetMinY(rect);
+        CGFloat keyboardFrameHeight = rect.size.height;
+        
+        
+        if (keyboardFrameHeight > 200) {
+            height = screenHeight - keyboardTop;
+        } else {
+            height = keyboardFrameHeight;
+        }
+        
+        if (height < 0) height = 0;
+    }
+    
+    NSString *data = [NSString stringWithFormat:@"{ 'keyboardHeight': %d }", (int)height];
+    [self.bridge triggerWindowJSEventWithEventName:@"keyboardDidChangeFrame" data:data];
+    NSDictionary *kbData = @{@"keyboardHeight": [NSNumber numberWithDouble:height]};
+    [self notifyListeners:@"keyboardDidChangeFrame" data:kbData];
 }
 
 - (void)setKeyboardHeight:(int)height delay:(NSTimeInterval)delay
@@ -224,6 +335,7 @@ double stageManagerOffset;
   if (self.webView != nil) {
     wf = self.webView.frame;
   }
+  
   switch (self.keyboardResizes) {
     case ResizeBody:
     {
