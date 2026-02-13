@@ -85,8 +85,12 @@ public class Keyboard {
                     @NonNull WindowInsetsAnimationCompat animation,
                     @NonNull WindowInsetsAnimationCompat.BoundsCompat bounds
                 ) {
-                    boolean showingKeyboard = ViewCompat.getRootWindowInsets(rootView).isVisible(WindowInsetsCompat.Type.ime());
                     WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(rootView);
+                    if (insets == null) {
+                        return super.onStart(animation, bounds);
+                    }
+
+                    boolean showingKeyboard = insets.isVisible(WindowInsetsCompat.Type.ime());
                     int imeHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
                     DisplayMetrics dm = activity.getResources().getDisplayMetrics();
                     final float density = dm.density;
@@ -95,10 +99,12 @@ public class Keyboard {
                         possiblyResizeChildOfContent(showingKeyboard);
                     }
 
-                    if (showingKeyboard) {
-                        keyboardEventListener.onKeyboardEvent(EVENT_KB_WILL_SHOW, Math.round(imeHeight / density));
-                    } else {
-                        keyboardEventListener.onKeyboardEvent(EVENT_KB_WILL_HIDE, 0);
+                    if (keyboardEventListener != null) {
+                        if (showingKeyboard) {
+                            keyboardEventListener.onKeyboardEvent(EVENT_KB_WILL_SHOW, Math.round(imeHeight / density));
+                        } else {
+                            keyboardEventListener.onKeyboardEvent(EVENT_KB_WILL_HIDE, 0);
+                        }
                     }
                     return super.onStart(animation, bounds);
                 }
@@ -106,16 +112,22 @@ public class Keyboard {
                 @Override
                 public void onEnd(@NonNull WindowInsetsAnimationCompat animation) {
                     super.onEnd(animation);
-                    boolean showingKeyboard = ViewCompat.getRootWindowInsets(rootView).isVisible(WindowInsetsCompat.Type.ime());
                     WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(rootView);
+                    if (insets == null || keyboardEventListener == null) {
+                        return;
+                    }
+
+                    boolean showingKeyboard = insets.isVisible(WindowInsetsCompat.Type.ime());
                     int imeHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
                     DisplayMetrics dm = activity.getResources().getDisplayMetrics();
                     final float density = dm.density;
 
-                    if (showingKeyboard) {
-                        keyboardEventListener.onKeyboardEvent(EVENT_KB_DID_SHOW, Math.round(imeHeight / density));
-                    } else {
-                        keyboardEventListener.onKeyboardEvent(EVENT_KB_DID_HIDE, 0);
+                    if (keyboardEventListener != null) {
+                        if (showingKeyboard) {
+                            keyboardEventListener.onKeyboardEvent(EVENT_KB_DID_SHOW, Math.round(imeHeight / density));
+                        } else {
+                            keyboardEventListener.onKeyboardEvent(EVENT_KB_DID_HIDE, 0);
+                        }
                     }
                 }
             }
@@ -123,6 +135,13 @@ public class Keyboard {
 
         mChildOfContent = content.getChildAt(0);
         frameLayoutParams = (FrameLayout.LayoutParams) mChildOfContent.getLayoutParams();
+    }
+
+    public void destroy() {
+        if (rootView != null) {
+            ViewCompat.setWindowInsetsAnimationCallback(rootView, null);
+            rootView = null;
+        }
     }
 
     public void show() {
