@@ -1,3 +1,10 @@
+## [8.0.1](https://github.com/ionic-team/capacitor-keyboard/compare/v8.0.0...v8.0.1) (2026-02-24)
+
+
+### Bug Fixes
+
+* **android:** AGP 9.0 no longer supporting `proguard-android.txt` ([#47](https://github.com/ionic-team/capacitor-keyboard/issues/47)) ([e9b1ad9](https://github.com/ionic-team/capacitor-keyboard/commit/e9b1ad9b96a3405da99224bf0df78389cfeba561))
+
 # [8.0.0](https://github.com/ionic-team/capacitor-keyboard/compare/v7.0.3...v8.0.0) (2025-12-08)
 
 
