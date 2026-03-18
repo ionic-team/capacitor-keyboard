@@ -64,6 +64,7 @@ public class Keyboard {
                 possiblyResizeChildOfContent(true);
             }
 
+            ViewCompat.onApplyWindowInsets(v, insets);
             return insets;
         });
 
