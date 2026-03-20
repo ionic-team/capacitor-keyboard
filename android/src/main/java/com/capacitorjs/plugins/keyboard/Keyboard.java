@@ -60,8 +60,8 @@ public class Keyboard {
         ViewCompat.setOnApplyWindowInsetsListener(rootView, (v, insets) -> {
             boolean showingKeyboard = ViewCompat.getRootWindowInsets(rootView).isVisible(WindowInsetsCompat.Type.ime());
 
-            if (showingKeyboard && resizeOnFullScreen) {
-                possiblyResizeChildOfContent(true);
+            if (resizeOnFullScreen) {
+                possiblyResizeChildOfContent(showingKeyboard);
             }
 
             return insets;
