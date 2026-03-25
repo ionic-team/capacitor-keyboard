@@ -1,3 +1,10 @@
+## [8.0.2](https://github.com/ionic-team/capacitor-keyboard/compare/v8.0.1...v8.0.2) (2026-03-25)
+
+
+### Bug Fixes
+
+* **android:** calling ViewCompat.onApplyWindowInsets ([#59](https://github.com/ionic-team/capacitor-keyboard/issues/59)) ([cc74b2d](https://github.com/ionic-team/capacitor-keyboard/commit/cc74b2dd62b719b450fe241cd1c802b103d62d5f))
+
 ## [8.0.1](https://github.com/ionic-team/capacitor-keyboard/compare/v8.0.0...v8.0.1) (2026-02-24)
 
 
