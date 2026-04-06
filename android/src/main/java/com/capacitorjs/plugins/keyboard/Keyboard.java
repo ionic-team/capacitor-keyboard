@@ -65,7 +65,7 @@ public class Keyboard {
             }
 
             ViewCompat.onApplyWindowInsets(v, insets);
-            return insets;
+            return WindowInsetsCompat.CONSUMED;
         });
 
         ViewCompat.setWindowInsetsAnimationCallback(
