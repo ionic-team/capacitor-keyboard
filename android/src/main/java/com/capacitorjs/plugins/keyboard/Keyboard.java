@@ -12,6 +12,7 @@ import android.widget.FrameLayout;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsAnimationCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -65,7 +66,19 @@ public class Keyboard {
             }
 
             ViewCompat.onApplyWindowInsets(v, insets);
-            return WindowInsetsCompat.CONSUMED;
+
+            Insets systemBarsInsets = insets.getInsets(WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout());
+            return new WindowInsetsCompat.Builder(insets)
+                .setInsets(
+                    WindowInsetsCompat.Type.systemBars() | WindowInsetsCompat.Type.displayCutout(),
+                    Insets.of(
+                        systemBarsInsets.left,
+                        systemBarsInsets.top,
+                        systemBarsInsets.right,
+                        0
+                    )
+                )
+                .build();
         });
 
         ViewCompat.setWindowInsetsAnimationCallback(
