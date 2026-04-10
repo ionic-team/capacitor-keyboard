@@ -1,3 +1,10 @@
+## [8.0.3](https://github.com/ionic-team/capacitor-keyboard/compare/v8.0.2...v8.0.3) (2026-04-10)
+
+
+### Bug Fixes
+
+* **android:** fixing Keyboard interaction with SystemBars ([#62](https://github.com/ionic-team/capacitor-keyboard/issues/62)) ([4afd89b](https://github.com/ionic-team/capacitor-keyboard/commit/4afd89b4af63609f40e970e7775fd03c5f6b407c))
+
 ## [8.0.2](https://github.com/ionic-team/capacitor-keyboard/compare/v8.0.1...v8.0.2) (2026-03-25)
 
 
