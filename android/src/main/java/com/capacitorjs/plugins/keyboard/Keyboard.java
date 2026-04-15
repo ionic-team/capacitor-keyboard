@@ -2,9 +2,7 @@ package com.capacitorjs.plugins.keyboard;
 
 import android.content.Context;
 import android.graphics.Rect;
-import android.os.Build;
 import android.util.DisplayMetrics;
-import android.util.TypedValue;
 import android.view.View;
 import android.view.Window;
 import android.view.inputmethod.InputMethodManager;
@@ -12,7 +10,6 @@ import android.widget.FrameLayout;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsAnimationCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -59,13 +56,15 @@ public class Keyboard {
         rootView = content.getRootView();
 
         ViewCompat.setOnApplyWindowInsetsListener(content, (v, insets) -> {
-            boolean showingKeyboard = ViewCompat.getRootWindowInsets(rootView).isVisible(WindowInsetsCompat.Type.ime());
+            WindowInsetsCompat rootInsets = ViewCompat.getRootWindowInsets(rootView);
+            if (rootInsets == null) {
+                return insets;
+            }
+            boolean showingKeyboard = rootInsets.isVisible(WindowInsetsCompat.Type.ime());
 
             if (showingKeyboard && resizeOnFullScreen) {
                 possiblyResizeChildOfContent(true);
             }
-
-            v.onApplyWindowInsets(insets.toWindowInsets());
 
             return insets;
         });
@@ -88,8 +87,11 @@ public class Keyboard {
                     @NonNull WindowInsetsAnimationCompat animation,
                     @NonNull WindowInsetsAnimationCompat.BoundsCompat bounds
                 ) {
-                    boolean showingKeyboard = ViewCompat.getRootWindowInsets(rootView).isVisible(WindowInsetsCompat.Type.ime());
                     WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(rootView);
+                    if (insets == null) {
+                        return super.onStart(animation, bounds);
+                    }
+                    boolean showingKeyboard = insets.isVisible(WindowInsetsCompat.Type.ime());
                     int imeHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
                     DisplayMetrics dm = activity.getResources().getDisplayMetrics();
                     final float density = dm.density;
@@ -98,10 +100,12 @@ public class Keyboard {
                         possiblyResizeChildOfContent(showingKeyboard);
                     }
 
-                    if (showingKeyboard) {
-                        keyboardEventListener.onKeyboardEvent(EVENT_KB_WILL_SHOW, Math.round(imeHeight / density));
-                    } else {
-                        keyboardEventListener.onKeyboardEvent(EVENT_KB_WILL_HIDE, 0);
+                    if (keyboardEventListener != null) {
+                        if (showingKeyboard) {
+                            keyboardEventListener.onKeyboardEvent(EVENT_KB_WILL_SHOW, Math.round(imeHeight / density));
+                        } else {
+                            keyboardEventListener.onKeyboardEvent(EVENT_KB_WILL_HIDE, 0);
+                        }
                     }
                     return super.onStart(animation, bounds);
                 }
@@ -109,16 +113,21 @@ public class Keyboard {
                 @Override
                 public void onEnd(@NonNull WindowInsetsAnimationCompat animation) {
                     super.onEnd(animation);
-                    boolean showingKeyboard = ViewCompat.getRootWindowInsets(rootView).isVisible(WindowInsetsCompat.Type.ime());
                     WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(rootView);
+                    if (insets == null) {
+                        return;
+                    }
+                    boolean showingKeyboard = insets.isVisible(WindowInsetsCompat.Type.ime());
                     int imeHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
                     DisplayMetrics dm = activity.getResources().getDisplayMetrics();
                     final float density = dm.density;
 
-                    if (showingKeyboard) {
-                        keyboardEventListener.onKeyboardEvent(EVENT_KB_DID_SHOW, Math.round(imeHeight / density));
-                    } else {
-                        keyboardEventListener.onKeyboardEvent(EVENT_KB_DID_HIDE, 0);
+                    if (keyboardEventListener != null) {
+                        if (showingKeyboard) {
+                            keyboardEventListener.onKeyboardEvent(EVENT_KB_DID_SHOW, Math.round(imeHeight / density));
+                        } else {
+                            keyboardEventListener.onKeyboardEvent(EVENT_KB_DID_HIDE, 0);
+                        }
                     }
                 }
             }
