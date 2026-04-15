@@ -55,7 +55,7 @@ public class Keyboard {
         FrameLayout content = activity.getWindow().getDecorView().findViewById(android.R.id.content);
         rootView = content.getRootView();
 
-        ViewCompat.setOnApplyWindowInsetsListener(content, (v, insets) -> {
+        ViewCompat.setOnApplyWindowInsetsListener(rootView, (v, insets) -> {
             WindowInsetsCompat rootInsets = ViewCompat.getRootWindowInsets(rootView);
             if (rootInsets == null) {
                 return insets;
