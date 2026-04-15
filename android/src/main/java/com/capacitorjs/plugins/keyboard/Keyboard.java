@@ -10,6 +10,7 @@ import android.widget.FrameLayout;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsAnimationCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -28,6 +29,7 @@ public class Keyboard {
     private int usableHeightPrevious;
     private FrameLayout.LayoutParams frameLayoutParams;
     private View mChildOfContent;
+    private boolean resizeEnabled;
 
     public void setKeyboardEventListener(@Nullable KeyboardEventListener keyboardEventListener) {
         this.keyboardEventListener = keyboardEventListener;
@@ -50,6 +52,7 @@ public class Keyboard {
     // We may want to deprecate this constructor in the future, but we are keeping it now to keep backward compatibility with cap 7
     public Keyboard(AppCompatActivity activity, boolean resizeOnFullScreen) {
         this.activity = activity;
+        this.resizeEnabled = resizeOnFullScreen;
 
         //http://stackoverflow.com/a/4737265/1091751 detect if keyboard is showing
         FrameLayout content = activity.getWindow().getDecorView().findViewById(android.R.id.content);
@@ -62,8 +65,17 @@ public class Keyboard {
             }
             boolean showingKeyboard = rootInsets.isVisible(WindowInsetsCompat.Type.ime());
 
-            if (showingKeyboard && resizeOnFullScreen) {
+            if (showingKeyboard && resizeEnabled) {
                 possiblyResizeChildOfContent(true);
+            }
+
+            // When resize is disabled, consume IME insets so that the WebView
+            // (and any other child) does not reflow its content when the keyboard
+            // appears (counteracts Capacitor bridge inset handling added in 8.3.0+).
+            if (!resizeEnabled && showingKeyboard) {
+                return new WindowInsetsCompat.Builder(insets)
+                    .setInsets(WindowInsetsCompat.Type.ime(), Insets.NONE)
+                    .build();
             }
 
             return insets;
@@ -96,7 +108,7 @@ public class Keyboard {
                     DisplayMetrics dm = activity.getResources().getDisplayMetrics();
                     final float density = dm.density;
 
-                    if (resizeOnFullScreen) {
+                    if (Keyboard.this.resizeEnabled) {
                         possiblyResizeChildOfContent(showingKeyboard);
                     }
 
@@ -135,6 +147,14 @@ public class Keyboard {
 
         mChildOfContent = content.getChildAt(0);
         frameLayoutParams = (FrameLayout.LayoutParams) mChildOfContent.getLayoutParams();
+    }
+
+    public void setResizeEnabled(boolean enabled) {
+        this.resizeEnabled = enabled;
+    }
+
+    public boolean isResizeEnabled() {
+        return this.resizeEnabled;
     }
 
     public void show() {
