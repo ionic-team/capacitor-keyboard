@@ -12,11 +12,13 @@ import com.getcapacitor.annotation.CapacitorPlugin;
 public class KeyboardPlugin extends Plugin {
 
     private Keyboard implementation;
+    private volatile String currentResizeMode = "none";
 
     @Override
     public void load() {
         execute(() -> {
             boolean resizeOnFullScreen = getConfig().getBoolean("resizeOnFullScreen", false);
+            currentResizeMode = resizeOnFullScreen ? "native" : "none";
             implementation = new Keyboard(getBridge(), resizeOnFullScreen);
 
             implementation.setKeyboardEventListener(this::onKeyboardEvent);
@@ -59,12 +61,20 @@ public class KeyboardPlugin extends Plugin {
 
     @PluginMethod
     public void setResizeMode(PluginCall call) {
-        call.unimplemented();
+        String mode = call.getString("mode", "none");
+        execute(() -> {
+            boolean resizeEnabled = !"none".equalsIgnoreCase(mode);
+            implementation.setResizeEnabled(resizeEnabled);
+            currentResizeMode = mode;
+            call.resolve();
+        });
     }
 
     @PluginMethod
     public void getResizeMode(PluginCall call) {
-        call.unimplemented();
+        JSObject result = new JSObject();
+        result.put("mode", currentResizeMode);
+        call.resolve(result);
     }
 
     @PluginMethod
