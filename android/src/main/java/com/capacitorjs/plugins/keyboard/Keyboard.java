@@ -12,6 +12,7 @@ import android.widget.FrameLayout;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsAnimationCompat;
 import androidx.core.view.WindowInsetsCompat;
@@ -57,12 +58,14 @@ public class Keyboard {
         FrameLayout content = activity.getWindow().getDecorView().findViewById(android.R.id.content);
         rootView = content.getRootView();
 
-        ViewCompat.setOnApplyWindowInsetsListener(rootView, (v, insets) -> {
+        ViewCompat.setOnApplyWindowInsetsListener(content, (v, insets) -> {
             boolean showingKeyboard = ViewCompat.getRootWindowInsets(rootView).isVisible(WindowInsetsCompat.Type.ime());
 
             if (showingKeyboard && resizeOnFullScreen) {
                 possiblyResizeChildOfContent(true);
             }
+
+            v.onApplyWindowInsets(insets.toWindowInsets());
 
             return insets;
         });
@@ -141,6 +144,11 @@ public class Keyboard {
     }
 
     private void possiblyResizeChildOfContent(boolean keyboardShown) {
+        if (isSystemBarsPluginPresent()) {
+            // SystemBars handles the inset sizing for visible keyboards
+            return;
+        }
+
         int usableHeightNow = keyboardShown ? computeUsableHeight() : -1;
         if (usableHeightPrevious != usableHeightNow) {
             frameLayoutParams.height = usableHeightNow;
@@ -153,6 +161,15 @@ public class Keyboard {
         Rect r = new Rect();
         mChildOfContent.getWindowVisibleDisplayFrame(r);
         return isOverlays() ? r.bottom : r.height();
+    }
+
+    private static boolean isSystemBarsPluginPresent() {
+        try {
+            Class.forName("com.getcapacitor.plugin.SystemBars");
+            return true;
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
     }
 
     @SuppressWarnings("deprecation")

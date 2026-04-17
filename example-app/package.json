@@ -40,11 +40,11 @@
     "jsdom": "^22.1.0",
     "terser": "^5.44.1",
     "typescript": "^5.9.3",
-    "vite": "^7.2.4",
+    "vite": "^7.3.2",
     "vitest": "^0.34.6"
   },
   "overrides": {
-    "rollup": "4.44.0"
+    "rollup": "4.60.1"
   },
   "description": "An Ionic project"
 }
