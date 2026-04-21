@@ -240,6 +240,20 @@ double stageManagerOffset;
       [self.webView setFrame:CGRectMake(wf.origin.x, wf.origin.y, f.size.width - wf.origin.x, f.size.height - wf.origin.y - self.paddingBottom)];
       break;
     }
+    case ResizeNone:
+    {
+      // Actively restore the webview to its full-screen frame to counteract any
+      // keyboard-induced resize that Capacitor's bridge may apply (8.3.0+).
+      [self.webView setFrame:CGRectMake(wf.origin.x, wf.origin.y, f.size.width - wf.origin.x, f.size.height - wf.origin.y)];
+      // Also reset additionalSafeAreaInsets.bottom in case the bridge raised it
+      // to push content above the keyboard.
+      UIEdgeInsets safeInsets = self.bridge.viewController.additionalSafeAreaInsets;
+      if (safeInsets.bottom != 0) {
+        safeInsets.bottom = 0;
+        self.bridge.viewController.additionalSafeAreaInsets = safeInsets;
+      }
+      break;
+    }
     default:
       break;
   }
