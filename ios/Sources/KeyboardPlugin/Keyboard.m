@@ -142,8 +142,34 @@ double stageManagerOffset;
     }
   }
 
-  double duration = [[notification.userInfo valueForKey:UIKeyboardAnimationDurationUserInfoKey] doubleValue]+0.2;
-  [self setKeyboardHeight:height delay:duration];
+  // Extract animation curve and convert to CSS timing function string
+  NSInteger animationCurve = [[notification.userInfo valueForKey:UIKeyboardAnimationCurveUserInfoKey] integerValue];
+  NSString *curveString;
+  switch (animationCurve) {
+    case UIViewAnimationCurveEaseInOut:
+      curveString = @"ease-in-out";
+      break;
+    case UIViewAnimationCurveEaseIn:
+      curveString = @"ease-in";
+      break;
+    case UIViewAnimationCurveEaseOut:
+      curveString = @"ease-out";
+      break;
+    case UIViewAnimationCurveLinear:
+      curveString = @"linear";
+      break;
+    default:
+      curveString = @"ease-in-out";
+      break;
+  }
+
+  // Set CSS variables on body element
+  double duration = [[notification.userInfo valueForKey:UIKeyboardAnimationDurationUserInfoKey] doubleValue];
+  if (duration > 0) {
+    [self.bridge evalWithJs: [NSString stringWithFormat:@"(function() { document.body.style.setProperty('--keyboard-animation-duration', '%fs'); document.body.style.setProperty('--keyboard-animation-curve', '%@'); })()", duration, curveString]];
+  }
+
+  [self setKeyboardHeight:height delay:0];
   [self resetScrollView];
 
   NSString * data = [NSString stringWithFormat:@"{ 'keyboardHeight': %d }", (int)height];
@@ -180,6 +206,7 @@ double stageManagerOffset;
     return;
   }
 
+  [self.bridge evalWithJs: [NSString stringWithFormat:@"(function() { document.body.style.setProperty('--keyboard-height', '%dpx'); })()", height]];
   self.paddingBottom = height;
 
   __weak KeyboardPlugin* weakSelf = self;
@@ -403,4 +430,3 @@ static IMP WKOriginalImp;
 
 @end
 #pragma clang diagnostic pop
-
