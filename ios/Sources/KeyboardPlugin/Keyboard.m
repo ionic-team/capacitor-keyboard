@@ -123,6 +123,14 @@ double stageManagerOffset;
     return [UIColor whiteColor]; // fallback
 }
 
+- (void)updateBackdropColor {
+  if (self.bridge.config.backgroundColor) {
+    [self forceBackdropColor:self.bridge.config.backgroundColor];
+  } else {
+    [self updateBackdropColorFromDOM];
+  }
+}
+
 - (void)updateBackdropColorFromDOM {
     if (!self.webView) return;
     [self.webView evaluateJavaScript:@"window.getComputedStyle(document.body).backgroundColor" completionHandler:^(id result, NSError *error) {
@@ -179,15 +187,14 @@ double stageManagerOffset;
   [nc removeObserver:self.webView name:UIKeyboardWillChangeFrameNotification object:nil];
   [nc removeObserver:self.webView name:UIKeyboardDidChangeFrameNotification object:nil];
 
-  // Make WKWebView transparent
-  if (self.webView) {
-    self.webView.opaque = NO;
-    self.webView.backgroundColor = UIColor.clearColor;
-    self.webView.scrollView.backgroundColor = UIColor.clearColor;
-  }
-
-  // Force DOM color on load
-  [self updateBackdropColorFromDOM];
+//  // Make WKWebView transparent
+//  if (self.webView) {
+//    self.webView.opaque = NO;
+//    self.webView.backgroundColor = UIColor.clearColor;
+//    self.webView.scrollView.backgroundColor = UIColor.clearColor;
+//  }
+  
+  [self updateBackdropColor];
 }
 
 #pragma mark Keyboard events
@@ -216,7 +223,7 @@ double stageManagerOffset;
   }
 
   // Force DOM color whenever keyboard shows
-  [self updateBackdropColorFromDOM];
+  [self updateBackdropColor];
 
   CGRect rect = [[notification.userInfo valueForKey:UIKeyboardFrameEndUserInfoKey] CGRectValue];
 
