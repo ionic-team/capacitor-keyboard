@@ -187,12 +187,12 @@ double stageManagerOffset;
   [nc removeObserver:self.webView name:UIKeyboardWillChangeFrameNotification object:nil];
   [nc removeObserver:self.webView name:UIKeyboardDidChangeFrameNotification object:nil];
 
-//  // Make WKWebView transparent
-//  if (self.webView) {
-//    self.webView.opaque = NO;
-//    self.webView.backgroundColor = UIColor.clearColor;
-//    self.webView.scrollView.backgroundColor = UIColor.clearColor;
-//  }
+  // Make WKWebView transparent
+  if (self.webView) {
+    self.webView.opaque = NO;
+    self.webView.backgroundColor = UIColor.clearColor;
+    self.webView.scrollView.backgroundColor = UIColor.clearColor;
+  }
   
   [self updateBackdropColor];
 }
