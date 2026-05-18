@@ -97,14 +97,21 @@ double stageManagerOffset;
 - (UIColor *)colorFromCssColorString:(NSString *)cssColor {
     NSString *trimmed = [cssColor stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
 
+    if ([trimmed isEqualToString:@"transparent"]) {
+        return [UIColor clearColor];
+    }
+
     if ([trimmed hasPrefix:@"rgb"]) {
-        NSString *clean = [[trimmed stringByReplacingOccurrencesOfString:@"rgb(" withString:@""] stringByReplacingOccurrencesOfString:@")" withString:@""];
+        NSRange parenRange = [trimmed rangeOfString:@"("];
+        NSString *clean = parenRange.location != NSNotFound ? [trimmed substringFromIndex:parenRange.location + 1] : trimmed;
+        clean = [clean stringByReplacingOccurrencesOfString:@")" withString:@""];
         NSArray *parts = [clean componentsSeparatedByString:@","];
         if (parts.count >= 3) {
             CGFloat r = [parts[0] floatValue] / 255.0;
             CGFloat g = [parts[1] floatValue] / 255.0;
             CGFloat b = [parts[2] floatValue] / 255.0;
-            return [UIColor colorWithRed:r green:g blue:b alpha:1.0];
+            CGFloat a = parts.count >= 4 ? [parts[3] floatValue] : 1.0;
+            return [UIColor colorWithRed:r green:g blue:b alpha:a];
         }
     }
 
