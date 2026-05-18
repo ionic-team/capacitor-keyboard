@@ -49,9 +49,6 @@ typedef enum : NSUInteger {
 // protocol conformance for this class is implemented by a macro and clang isn't detecting that
 @implementation KeyboardPlugin
 
-/// Heights below this on iPad are treated as QuickType bar, not a real keyboard
-static const CGFloat QUICKTYPE_IGNORE_THRESHOLD = 100.0;
-
 NSTimer *hideTimer;
 NSString* UIClassString;
 NSString* WKClassString;
@@ -89,7 +86,8 @@ double stageManagerOffset;
 - (BOOL)shouldIgnoreResizeForHeight:(double)height {
   if (![self isIPad]) return NO;
   if (height <= 0.0) return NO;
-  return (height < QUICKTYPE_IGNORE_THRESHOLD);
+  CGFloat screenHeight = UIScreen.mainScreen.bounds.size.height;
+  return (height / screenHeight) < 0.20;
 }
 
 #pragma mark - Lifecycle
@@ -274,6 +272,12 @@ double stageManagerOffset;
   if ([self isIPad]) {
     if (stageManagerOffset > 0) {
       height = stageManagerOffset;
+    } else {
+      CGRect webViewAbsolute = [self.webView convertRect:self.webView.frame toCoordinateSpace:self.webView.window.screen.coordinateSpace];
+      height = (webViewAbsolute.size.height + webViewAbsolute.origin.y) - (UIScreen.mainScreen.bounds.size.height - rect.size.height);
+      if (height < 0) {
+        height = 0;
+      }
     }
   }
 
