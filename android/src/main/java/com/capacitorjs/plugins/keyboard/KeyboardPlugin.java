@@ -26,13 +26,10 @@ public class KeyboardPlugin extends Plugin {
     @PluginMethod
     public void show(final PluginCall call) {
         execute(() ->
-            new Handler(Looper.getMainLooper()).postDelayed(
-                () -> {
-                    implementation.show();
-                    call.resolve();
-                },
-                350
-            )
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                implementation.show();
+                call.resolve();
+            }, 350)
         );
     }
 
