@@ -109,8 +109,11 @@ public class Keyboard {
                 @Override
                 public void onEnd(@NonNull WindowInsetsAnimationCompat animation) {
                     super.onEnd(animation);
-                    boolean showingKeyboard = ViewCompat.getRootWindowInsets(rootView).isVisible(WindowInsetsCompat.Type.ime());
                     WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(rootView);
+                    if (insets == null) {
+                        return;
+                    }
+                    boolean showingKeyboard = insets.isVisible(WindowInsetsCompat.Type.ime());
                     int imeHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
                     DisplayMetrics dm = activity.getResources().getDisplayMetrics();
                     final float density = dm.density;
