@@ -92,6 +92,9 @@ public class KeyboardPlugin extends Plugin {
 
     @Override
     protected void handleOnDestroy() {
-        implementation.setKeyboardEventListener(null);
+        if (implementation != null) {
+            implementation.destroy();
+            implementation.setKeyboardEventListener(null);
+        }
     }
 }
