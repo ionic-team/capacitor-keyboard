@@ -62,7 +62,7 @@ double stageManagerOffset;
   if ([[[UIApplication sharedApplication] delegate] respondsToSelector:@selector(window)]) {
     window = [[[UIApplication sharedApplication] delegate] window];
   }
-  if (!window && @available(iOS 13.0, *)) {
+  if (!window) {
     NSPredicate *predicate = [NSPredicate predicateWithFormat:@"self isKindOfClass: %@", UIWindowScene.class];
     UIScene *scene = [UIApplication.sharedApplication.connectedScenes.allObjects filteredArrayUsingPredicate:predicate].firstObject;
     window = [[(UIWindowScene*)scene windows] filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"isKeyWindow == YES"]].firstObject;
