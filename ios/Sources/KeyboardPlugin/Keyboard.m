@@ -131,7 +131,7 @@ double stageManagerOffset;
 - (void)updateBackdropColor {
   if (self.bridge.config.backgroundColor) {
     [self forceBackdropColor:self.bridge.config.backgroundColor];
-  } else {
+  } else if ([[self getConfig] getBoolean:@"autoBackdropColor": NO]) {
     [self updateBackdropColorFromDOM];
   }
 }

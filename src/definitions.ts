@@ -41,6 +41,24 @@ declare module '@capacitor/cli' {
        * @example true
        */
       resizeOnFullScreen?: boolean;
+
+      /**
+       * Auto-derive the keyboard backdrop color from the WebView's DOM.
+       *
+       * When enabled, every time the keyboard is about to show the plugin reads
+       * the web app page DOM background color and tints the
+       * key window (the area visible behind the keyboard) with that color. This
+       * keeps the backdrop in sync with the page's body background and avoids
+       * visible artifacts.  Has no effect if the root Capacitor `backgroundColor` config is set;
+       * that explicit color always takes precedence.
+       *
+       * Only available on iOS.
+       *
+       * @since 8.1.0
+       * @default false
+       * @example true
+       */
+      autoBackdropColor?: boolean;
     };
   }
 }
