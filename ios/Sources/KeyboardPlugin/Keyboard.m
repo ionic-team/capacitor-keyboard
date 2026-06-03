@@ -129,9 +129,15 @@ double stageManagerOffset;
 }
 
 - (void)updateBackdropColor {
-  if (self.bridge.config.backgroundColor) {
-    [self forceBackdropColor:self.bridge.config.backgroundColor];
-  } else if ([[self getConfig] getBoolean:@"autoBackdropColor": NO]) {
+  NSString *mode = [[self getConfig] getString:@"autoBackdropColor": @"off"];
+
+  if ([mode isEqualToString:@"auto"]) {
+    if (self.bridge.config.backgroundColor) {
+      [self forceBackdropColor:self.bridge.config.backgroundColor];
+    } else {
+      [self updateBackdropColorFromDOM];
+    }
+  } else if ([mode isEqualToString:@"dom"]) {
     [self updateBackdropColorFromDOM];
   }
 }
