@@ -143,7 +143,7 @@ public class Keyboard {
         if (v == null) {
             return false;
         } else {
-            inputManager.hideSoftInputFromWindow(v.getWindowToken(), InputMethodManager.HIDE_NOT_ALWAYS);
+            inputManager.hideSoftInputFromWindow(v.getWindowToken(), 0);
             return true;
         }
     }
