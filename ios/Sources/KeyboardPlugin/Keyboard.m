@@ -18,6 +18,7 @@
 #import "Keyboard.h"
 #import <Foundation/Foundation.h>
 #import <objc/runtime.h>
+#import <UIKit/UIKit.h>
 #import <Capacitor/Capacitor.h>
 #import <Capacitor/Capacitor-Swift.h>
 #import <Capacitor/CAPBridgedPlugin.h>
@@ -53,6 +54,105 @@ NSString* UIClassString;
 NSString* WKClassString;
 NSString* UITraitsClassString;
 double stageManagerOffset;
+
+#pragma mark - Helpers
+
+- (UIWindow *)currentKeyWindow {
+  UIWindow *window = nil;
+  if ([[[UIApplication sharedApplication] delegate] respondsToSelector:@selector(window)]) {
+    window = [[[UIApplication sharedApplication] delegate] window];
+  }
+  if (!window) {
+    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"self isKindOfClass: %@", UIWindowScene.class];
+    UIScene *scene = [UIApplication.sharedApplication.connectedScenes.allObjects filteredArrayUsingPredicate:predicate].firstObject;
+    window = [[(UIWindowScene*)scene windows] filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"isKeyWindow == YES"]].firstObject;
+  }
+  return window;
+}
+
+- (void)forceBackdropColor:(UIColor *)color {
+  UIWindow *w = [self currentKeyWindow];
+  if (w) {
+    dispatch_async(dispatch_get_main_queue(), ^{
+      w.backgroundColor = color;
+    });
+  }
+}
+
+- (BOOL)isIPad {
+  return ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad);
+}
+
+- (BOOL)shouldIgnoreResizeForHeight:(double)height {
+  if (![self isIPad]) return NO;
+  if (height <= 0.0) return NO;
+  CGFloat screenHeight = UIScreen.mainScreen.bounds.size.height;
+  return (height / screenHeight) < 0.20;
+}
+
+#pragma mark - Lifecycle
+
+- (UIColor *)colorFromCssColorString:(NSString *)cssColor {
+    NSString *trimmed = [cssColor stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+
+    if ([trimmed isEqualToString:@"transparent"]) {
+        return [UIColor clearColor];
+    }
+
+    if ([trimmed hasPrefix:@"rgb"]) {
+        NSRange parenRange = [trimmed rangeOfString:@"("];
+        NSString *clean = parenRange.location != NSNotFound ? [trimmed substringFromIndex:parenRange.location + 1] : trimmed;
+        clean = [clean stringByReplacingOccurrencesOfString:@")" withString:@""];
+        NSArray *parts = [clean componentsSeparatedByString:@","];
+        if (parts.count >= 3) {
+            CGFloat r = [parts[0] floatValue] / 255.0;
+            CGFloat g = [parts[1] floatValue] / 255.0;
+            CGFloat b = [parts[2] floatValue] / 255.0;
+            CGFloat a = parts.count >= 4 ? [parts[3] floatValue] : 1.0;
+            return [UIColor colorWithRed:r green:g blue:b alpha:a];
+        }
+    }
+
+    if ([trimmed hasPrefix:@"#"]) {
+        unsigned rgbValue = 0;
+        NSScanner *scanner = [NSScanner scannerWithString:trimmed];
+        [scanner setScanLocation:1];
+        if ([scanner scanHexInt:&rgbValue]) {
+            CGFloat r = ((rgbValue & 0xFF0000) >> 16) / 255.0;
+            CGFloat g = ((rgbValue & 0x00FF00) >> 8) / 255.0;
+            CGFloat b = (rgbValue & 0x0000FF) / 255.0;
+            return [UIColor colorWithRed:r green:g blue:b alpha:1.0];
+        }
+    }
+
+    return [UIColor whiteColor]; // fallback
+}
+
+- (void)updateBackdropColor {
+  NSString *mode = [[self getConfig] getString:@"autoBackdropColor": @"off"];
+
+  if ([mode isEqualToString:@"auto"]) {
+    if (self.bridge.config.backgroundColor) {
+      [self forceBackdropColor:self.bridge.config.backgroundColor];
+    } else {
+      [self updateBackdropColorFromDOM];
+    }
+  } else if ([mode isEqualToString:@"dom"]) {
+    [self updateBackdropColorFromDOM];
+  }
+}
+
+- (void)updateBackdropColorFromDOM {
+    if (!self.webView) return;
+    [self.webView evaluateJavaScript:@"window.getComputedStyle(document.body).backgroundColor" completionHandler:^(id result, NSError *error) {
+        if (result && [result isKindOfClass:[NSString class]]) {
+            UIColor *color = [self colorFromCssColorString:(NSString *)result];
+            if (color) {
+                [self forceBackdropColor:color];
+            }
+        }
+    }];
+}
 
 - (void)load
 {
@@ -97,8 +197,9 @@ double stageManagerOffset;
   [nc removeObserver:self.webView name:UIKeyboardWillShowNotification object:nil];
   [nc removeObserver:self.webView name:UIKeyboardWillChangeFrameNotification object:nil];
   [nc removeObserver:self.webView name:UIKeyboardDidChangeFrameNotification object:nil];
-}
 
+  [self updateBackdropColor];
+}
 
 #pragma mark Keyboard events
 
@@ -124,11 +225,15 @@ double stageManagerOffset;
   if (hideTimer != nil) {
     [hideTimer invalidate];
   }
+
+  // Force DOM color whenever keyboard shows
+  [self updateBackdropColor];
+
   CGRect rect = [[notification.userInfo valueForKey:UIKeyboardFrameEndUserInfoKey] CGRectValue];
 
   double height = rect.size.height;
     
-  if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPad) {
+  if ([self isIPad]) {
     if (stageManagerOffset > 0) {
       height = stageManagerOffset;
     } else {
@@ -142,8 +247,14 @@ double stageManagerOffset;
     }
   }
 
+  BOOL ignored = [self shouldIgnoreResizeForHeight:height];
+  if (ignored) {
+    NSLog(@"KeyboardPlugin: Ignoring QuickType Bar (%.1f) -> treat as 0.", height);
+    height = 0.0;
+  }
+
   double duration = [[notification.userInfo valueForKey:UIKeyboardAnimationDurationUserInfoKey] doubleValue]+0.2;
-  [self setKeyboardHeight:height delay:duration];
+  [self setKeyboardHeight:(int)height delay:duration];
   [self resetScrollView];
 
   NSString * data = [NSString stringWithFormat:@"{ 'keyboardHeight': %d }", (int)height];
@@ -156,6 +267,24 @@ double stageManagerOffset;
 {
   CGRect rect = [[notification.userInfo valueForKey:UIKeyboardFrameEndUserInfoKey] CGRectValue];
   double height = rect.size.height;
+
+  if ([self isIPad]) {
+    if (stageManagerOffset > 0) {
+      height = stageManagerOffset;
+    } else {
+      CGRect webViewAbsolute = [self.webView convertRect:self.webView.frame toCoordinateSpace:self.webView.window.screen.coordinateSpace];
+      height = (webViewAbsolute.size.height + webViewAbsolute.origin.y) - (UIScreen.mainScreen.bounds.size.height - rect.size.height);
+      if (height < 0) {
+        height = 0;
+      }
+    }
+  }
+
+  BOOL ignored = [self shouldIgnoreResizeForHeight:height];
+  if (ignored) {
+    NSLog(@"KeyboardPlugin: (didShow) Ignoring QuickType Bar (%.1f) -> report 0.", height);
+    height = 0.0;
+  }
 
   [self resetScrollView];
 
@@ -205,19 +334,8 @@ double stageManagerOffset;
 - (void)_updateFrame
 {
   CGRect f, wf = CGRectZero;
-  UIWindow * window = nil;
-    
-  if ([[[UIApplication sharedApplication] delegate] respondsToSelector:@selector(window)]) {
-    window = [[[UIApplication sharedApplication] delegate] window];
-  }
-  
-  if (!window) {
-    if (@available(iOS 13.0, *)) {
-      NSPredicate *predicate = [NSPredicate predicateWithFormat:@"self isKindOfClass: %@", UIWindowScene.class];
-      UIScene *scene = [UIApplication.sharedApplication.connectedScenes.allObjects filteredArrayUsingPredicate:predicate].firstObject;
-      window = [[(UIWindowScene*)scene windows] filteredArrayUsingPredicate:[NSPredicate predicateWithFormat:@"isKeyWindow == YES"]].firstObject;
-    }
-  }
+  UIWindow *window = [self currentKeyWindow];
+
   if (window) {
     f = [window bounds];
   }
