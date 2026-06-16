@@ -55,7 +55,7 @@ declare module '@capacitor/cli' {
        *
        * Only available on iOS.
        *
-       * @since 8.1.0
+       * @since 8.0.4
        * @default "off"
        * @example "auto"
        */

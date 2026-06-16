@@ -1,3 +1,10 @@
+## [8.0.5](https://github.com/ionic-team/capacitor-keyboard/compare/v8.0.4...v8.0.5) (2026-06-16)
+
+
+### Bug Fixes
+
+* **docs:** `autoBackdropColor` reference ([cb4af94](https://github.com/ionic-team/capacitor-keyboard/commit/cb4af9441fbfeadc2d210c0137c257faac0376f8))
+
 ## [8.0.4](https://github.com/ionic-team/capacitor-keyboard/compare/v8.0.3...v8.0.4) (2026-06-16)
 
 
