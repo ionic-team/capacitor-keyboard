@@ -17,7 +17,8 @@ let package = Package(
         .target(
             name: "KeyboardPlugin",
             dependencies: [
-                .product(name: "Capacitor", package: "capacitor-swift-pm")],
+                .product(name: "Capacitor", package: "capacitor-swift-pm")
+            ],
             path: "ios/Sources/KeyboardPlugin",
             publicHeadersPath: "include"),
         .testTarget(
