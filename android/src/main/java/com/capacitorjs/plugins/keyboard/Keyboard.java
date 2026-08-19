@@ -31,6 +31,27 @@ public class Keyboard {
     private int usableHeightPrevious;
     private FrameLayout.LayoutParams frameLayoutParams;
     private View mChildOfContent;
+    private int lastImeHeight = 0;
+
+    public enum EventMode {
+        DEFAULT,
+        LAST_KNOWN
+    }
+
+    private boolean isAnimating = false;
+    private boolean justEndedAnimation = false;
+    private int knownKeyboardHeight = 0;
+    private EventMode eventMode = EventMode.DEFAULT;
+
+    public void setEventMode(String modeStr) {
+        if (modeStr != null) {
+            try {
+                this.eventMode = EventMode.valueOf(modeStr.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                this.eventMode = EventMode.DEFAULT;
+            }
+        }
+    }
 
     public void setKeyboardEventListener(@Nullable KeyboardEventListener keyboardEventListener) {
         this.keyboardEventListener = keyboardEventListener;
@@ -63,25 +84,82 @@ public class Keyboard {
             if (rootInsets == null) return insets;
 
             boolean showingKeyboard = rootInsets.isVisible(WindowInsetsCompat.Type.ime());
+            int imeHeight = rootInsets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
+            DisplayMetrics dm = activity.getResources().getDisplayMetrics();
+            final float density = dm.density;
 
-            if (resizeOnFullScreen) {
-                possiblyResizeChildOfContent(showingKeyboard);
+            if (showingKeyboard) {
+                int currentImeHeight = Math.round(imeHeight / density);
+                if (!isAnimating) {
+                    int emitHeight = currentImeHeight;
+                    if (eventMode == EventMode.LAST_KNOWN) {
+                        if (knownKeyboardHeight == 0) {
+                            knownKeyboardHeight = currentImeHeight;
+                        } else if (justEndedAnimation) {
+                            knownKeyboardHeight = currentImeHeight;
+                        } else if (currentImeHeight > knownKeyboardHeight) {
+                            emitHeight = knownKeyboardHeight;
+                        } else if (currentImeHeight < knownKeyboardHeight) {
+                            knownKeyboardHeight = currentImeHeight;
+                        }
+                    } else {
+                        knownKeyboardHeight = currentImeHeight;
+                    }
+
+                    if (emitHeight != lastImeHeight && keyboardEventListener != null) {
+                        lastImeHeight = emitHeight;
+                        keyboardEventListener.onKeyboardEvent(EVENT_KB_WILL_SHOW, emitHeight);
+                        keyboardEventListener.onKeyboardEvent(EVENT_KB_DID_SHOW, emitHeight);
+                    }
+                    justEndedAnimation = false;
+                } else if (eventMode == EventMode.LAST_KNOWN) {
+                    if (knownKeyboardHeight == 0) {
+                        knownKeyboardHeight = currentImeHeight;
+                    }
+                }
+            } else {
+                lastImeHeight = 0;
+                justEndedAnimation = false;
             }
 
-            v.onApplyWindowInsets(insets.toWindowInsets());
+            logDebug("onApplyWindowInsets - showingKeyboard=" + showingKeyboard, insets, imeHeight);
 
-            return insets;
+            if (showingKeyboard && resizeOnFullScreen) {
+                possiblyResizeChildOfContent(true);
+            } else if (!showingKeyboard && resizeOnFullScreen) {
+                possiblyResizeChildOfContent(false);
+            }
+
+            WindowInsetsCompat insetsToApply = insets;
+            if (!resizeOnFullScreen) {
+                insetsToApply = new WindowInsetsCompat.Builder(insets)
+                    .setInsets(WindowInsetsCompat.Type.ime(), androidx.core.graphics.Insets.NONE)
+                    .build();
+            }
+
+            return ViewCompat.onApplyWindowInsets(v, insetsToApply);
         });
 
         ViewCompat.setWindowInsetsAnimationCallback(
             rootView,
             new WindowInsetsAnimationCompat.Callback(WindowInsetsAnimationCompat.Callback.DISPATCH_MODE_STOP) {
+                @Override
+                public void onPrepare(@NonNull WindowInsetsAnimationCompat animation) {
+                    isAnimating = true;
+                    super.onPrepare(animation);
+                }
+
                 @NonNull
                 @Override
                 public WindowInsetsCompat onProgress(
                     @NonNull WindowInsetsCompat insets,
                     @NonNull List<WindowInsetsAnimationCompat> runningAnimations
                 ) {
+                    if (!resizeOnFullScreen) {
+                        return new WindowInsetsCompat.Builder(insets)
+                            .setInsets(WindowInsetsCompat.Type.ime(), androidx.core.graphics.Insets.NONE)
+                            .build();
+                    }
                     return insets;
                 }
 
@@ -91,6 +169,8 @@ public class Keyboard {
                     @NonNull WindowInsetsAnimationCompat animation,
                     @NonNull WindowInsetsAnimationCompat.BoundsCompat bounds
                 ) {
+                    isAnimating = true;
+                    justEndedAnimation = false;
                     WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(rootView);
                     if (insets == null) return super.onStart(animation, bounds);
                     boolean showingKeyboard = insets.isVisible(WindowInsetsCompat.Type.ime());
@@ -103,10 +183,23 @@ public class Keyboard {
                     }
 
                     if (showingKeyboard) {
-                        keyboardEventListener.onKeyboardEvent(EVENT_KB_WILL_SHOW, Math.round(imeHeight / density));
+                        int currentImeHeight = Math.round(imeHeight / density);
+                        int emitHeight = currentImeHeight;
+                        if (eventMode == EventMode.LAST_KNOWN && knownKeyboardHeight > 0 && currentImeHeight > knownKeyboardHeight) {
+                            emitHeight = knownKeyboardHeight;
+                        }
+
+                        if (emitHeight != lastImeHeight) {
+                            lastImeHeight = emitHeight;
+                            keyboardEventListener.onKeyboardEvent(EVENT_KB_WILL_SHOW, lastImeHeight);
+                        }
                     } else {
+                        lastImeHeight = 0;
                         keyboardEventListener.onKeyboardEvent(EVENT_KB_WILL_HIDE, 0);
                     }
+
+                    logDebug("onStart - showingKeyboard=" + showingKeyboard, insets, imeHeight);
+
                     return super.onStart(animation, bounds);
                 }
 

@@ -43,6 +43,16 @@ declare module '@capacitor/cli' {
       resizeOnFullScreen?: boolean;
 
       /**
+       * The event mode determines how the plugin emits lifecycle events during keyboard animations.
+       *
+       * Only available for Android
+       *
+       * @since 8.0.5
+       * @example "LAST_KNOWN"
+       */
+      eventMode?: KeyboardEventMode;
+
+      /**
        * Controls how the keyboard backdrop color (the area visible behind the
        * keyboard) is set every time the keyboard is about to show.
        *
@@ -63,6 +73,8 @@ declare module '@capacitor/cli' {
     };
   }
 }
+
+export type KeyboardEventMode = 'DEFAULT' | 'LAST_KNOWN';
 
 export interface KeyboardInfo {
   /**
