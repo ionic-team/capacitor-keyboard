@@ -122,7 +122,7 @@ public class Keyboard {
                 justEndedAnimation = false;
             }
 
-            logDebug("onApplyWindowInsets - showingKeyboard=" + showingKeyboard, insets, imeHeight);
+
 
             if (showingKeyboard && resizeOnFullScreen) {
                 possiblyResizeChildOfContent(true);
@@ -198,7 +198,7 @@ public class Keyboard {
                         keyboardEventListener.onKeyboardEvent(EVENT_KB_WILL_HIDE, 0);
                     }
 
-                    logDebug("onStart - showingKeyboard=" + showingKeyboard, insets, imeHeight);
+
 
                     return super.onStart(animation, bounds);
                 }
@@ -206,6 +206,8 @@ public class Keyboard {
                 @Override
                 public void onEnd(@NonNull WindowInsetsAnimationCompat animation) {
                     super.onEnd(animation);
+                    isAnimating = false;
+
                     WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(rootView);
                     if (insets == null) return;
                     boolean showingKeyboard = insets.isVisible(WindowInsetsCompat.Type.ime());
@@ -214,10 +216,38 @@ public class Keyboard {
                     final float density = dm.density;
 
                     if (showingKeyboard) {
-                        keyboardEventListener.onKeyboardEvent(EVENT_KB_DID_SHOW, Math.round(imeHeight / density));
+                        justEndedAnimation = true;
+
+                        int currentImeHeight = Math.round(imeHeight / density);
+                        int emitHeight = currentImeHeight;
+                        if (eventMode == EventMode.LAST_KNOWN && knownKeyboardHeight > 0 && currentImeHeight > knownKeyboardHeight) {
+                            emitHeight = knownKeyboardHeight;
+                        }
+
+                        if (emitHeight != lastImeHeight) {
+                            lastImeHeight = emitHeight;
+                            if (keyboardEventListener != null) {
+                                keyboardEventListener.onKeyboardEvent(EVENT_KB_DID_SHOW, lastImeHeight);
+                            }
+                        }
+
+                        // Update the known keyboard height to the final settled height after animation.
+                        // We ONLY allow it to shrink here to prevent spurious tall frames (like during rapid aborts) from corrupting the ceiling.
+                        // If the keyboard genuinely grew, the subsequent onApplyWindowInsets layout pass will catch it via justEndedAnimation=true.
+                        if (eventMode == EventMode.LAST_KNOWN) {
+                            if (knownKeyboardHeight == 0 || currentImeHeight <= knownKeyboardHeight) {
+                                knownKeyboardHeight = currentImeHeight;
+                            }
+                        }
                     } else {
-                        keyboardEventListener.onKeyboardEvent(EVENT_KB_DID_HIDE, 0);
+                        justEndedAnimation = false;
+                        lastImeHeight = 0;
+                        if (keyboardEventListener != null) {
+                            keyboardEventListener.onKeyboardEvent(EVENT_KB_DID_HIDE, 0);
+                        }
                     }
+
+
                 }
             }
         );
