@@ -40,6 +40,10 @@ public class Keyboard {
 
     private final KeyboardHeightFilter filter = new KeyboardHeightFilter();
 
+    public void setSubtractNavigationBar(boolean subtractNavigationBar) {
+        this.subtractNavigationBar = subtractNavigationBar;
+    }
+
     public void setEventMode(String modeStr) {
         if (modeStr != null) {
             try {
@@ -56,6 +60,8 @@ public class Keyboard {
 
     @Nullable
     private KeyboardEventListener keyboardEventListener;
+    
+    private boolean subtractNavigationBar = true;
 
     static final String EVENT_KB_WILL_SHOW = "keyboardWillShow";
     static final String EVENT_KB_DID_SHOW = "keyboardDidShow";
@@ -83,7 +89,8 @@ public class Keyboard {
             boolean showingKeyboard = rootInsets.isVisible(WindowInsetsCompat.Type.ime());
             int rawImeHeight = rootInsets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
             int navBarHeight = rootInsets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
-            int imeHeight = filter.calculateImeHeight(rawImeHeight, navBarHeight, resizeOnFullScreen);
+            boolean ignoreNavBar = resizeOnFullScreen || !subtractNavigationBar;
+            int imeHeight = filter.calculateImeHeight(rawImeHeight, navBarHeight, ignoreNavBar);
             DisplayMetrics dm = activity.getResources().getDisplayMetrics();
             final float density = dm.density;
 
@@ -152,7 +159,8 @@ public class Keyboard {
                     boolean showingKeyboard = insets.isVisible(WindowInsetsCompat.Type.ime());
                     int rawImeHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
                     int navBarHeight = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
-                    int imeHeight = filter.calculateImeHeight(rawImeHeight, navBarHeight, resizeOnFullScreen);
+                    boolean ignoreNavBar = resizeOnFullScreen || !subtractNavigationBar;
+                    int imeHeight = filter.calculateImeHeight(rawImeHeight, navBarHeight, ignoreNavBar);
                     DisplayMetrics dm = activity.getResources().getDisplayMetrics();
                     final float density = dm.density;
 
@@ -184,7 +192,8 @@ public class Keyboard {
                     boolean showingKeyboard = insets.isVisible(WindowInsetsCompat.Type.ime());
                     int rawImeHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
                     int navBarHeight = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
-                    int imeHeight = filter.calculateImeHeight(rawImeHeight, navBarHeight, resizeOnFullScreen);
+                    boolean ignoreNavBar = resizeOnFullScreen || !subtractNavigationBar;
+                    int imeHeight = filter.calculateImeHeight(rawImeHeight, navBarHeight, ignoreNavBar);
                     DisplayMetrics dm = activity.getResources().getDisplayMetrics();
                     final float density = dm.density;
 

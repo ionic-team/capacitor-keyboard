@@ -53,6 +53,18 @@ declare module '@capacitor/cli' {
       eventMode?: KeyboardEventMode;
 
       /**
+       * If true (default), the plugin will automatically subtract the Android Navigation Bar height
+       * from the reported keyboard height when resizeOnFullScreen is false.
+       * Set to false to disable this subtraction if you are manually handling Edge-to-Edge insets.
+       *
+       * Only available for Android
+       *
+       * @since 8.0.5
+       * @example false
+       */
+      subtractNavigationBar?: boolean;
+
+      /**
        * Controls how the keyboard backdrop color (the area visible behind the
        * keyboard) is set every time the keyboard is about to show.
        *

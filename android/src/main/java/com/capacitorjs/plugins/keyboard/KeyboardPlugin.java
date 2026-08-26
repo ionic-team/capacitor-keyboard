@@ -17,9 +17,11 @@ public class KeyboardPlugin extends Plugin {
     public void load() {
         execute(() -> {
             boolean resizeOnFullScreen = getConfig().getBoolean("resizeOnFullScreen", false);
+            boolean subtractNavigationBar = getConfig().getBoolean("subtractNavigationBar", true);
             String eventMode = getConfig().getString("eventMode", "DEFAULT");
             implementation = new Keyboard(getBridge(), resizeOnFullScreen);
             implementation.setEventMode(eventMode);
+            implementation.setSubtractNavigationBar(subtractNavigationBar);
 
             implementation.setKeyboardEventListener(this::onKeyboardEvent);
         });

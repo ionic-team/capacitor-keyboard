@@ -101,8 +101,8 @@ public class KeyboardHeightFilter {
         return new FilterResult(emitHeight, true);
     }
 
-    public int calculateImeHeight(int rawImeHeight, int navBarHeight, boolean resizeOnFullScreen) {
-        if (!resizeOnFullScreen) {
+    public int calculateImeHeight(int rawImeHeight, int navBarHeight, boolean ignoreNavBar) {
+        if (!ignoreNavBar) {
             return Math.max(0, rawImeHeight - navBarHeight);
         }
         return rawImeHeight;
