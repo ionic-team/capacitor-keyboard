@@ -100,4 +100,11 @@ public class KeyboardHeightFilter {
         // The DID_SHOW event must unconditionally fire when the animation finishes
         return new FilterResult(emitHeight, true);
     }
+
+    public int calculateImeHeight(int rawImeHeight, int navBarHeight, boolean resizeOnFullScreen) {
+        if (!resizeOnFullScreen) {
+            return Math.max(0, rawImeHeight - navBarHeight);
+        }
+        return rawImeHeight;
+    }
 }

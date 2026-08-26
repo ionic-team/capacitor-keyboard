@@ -243,4 +243,20 @@ public class KeyboardHeightFilterTest {
         assertTrue(startResult.shouldEmit);
         assertEquals(369, startResult.emitHeight);
     }
+    
+    @Test
+    public void testCalculateImeHeightAccountsForNavBar() {
+        KeyboardHeightFilter filter = new KeyboardHeightFilter();
+        
+        // Edge-to-edge mode (resizeOnFullScreen = true)
+        // Webview draws under nav bar, so it needs the full raw height to escape the keyboard
+        assertEquals(900, filter.calculateImeHeight(900, 100, true));
+        
+        // Standard mode (resizeOnFullScreen = false)
+        // Webview stops at nav bar, so the keyboard overlaps it by exactly (raw - navBar)
+        assertEquals(800, filter.calculateImeHeight(900, 100, false));
+        
+        // Safety check for negative values
+        assertEquals(0, filter.calculateImeHeight(50, 100, false));
+    }
 }

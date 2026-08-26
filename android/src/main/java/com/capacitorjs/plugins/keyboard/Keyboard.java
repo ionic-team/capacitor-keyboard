@@ -81,7 +81,9 @@ public class Keyboard {
             if (rootInsets == null) return insets;
 
             boolean showingKeyboard = rootInsets.isVisible(WindowInsetsCompat.Type.ime());
-            int imeHeight = rootInsets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
+            int rawImeHeight = rootInsets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
+            int navBarHeight = rootInsets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
+            int imeHeight = filter.calculateImeHeight(rawImeHeight, navBarHeight, resizeOnFullScreen);
             DisplayMetrics dm = activity.getResources().getDisplayMetrics();
             final float density = dm.density;
 
@@ -148,7 +150,9 @@ public class Keyboard {
                     WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(rootView);
                     if (insets == null) return super.onStart(animation, bounds);
                     boolean showingKeyboard = insets.isVisible(WindowInsetsCompat.Type.ime());
-                    int imeHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
+                    int rawImeHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
+                    int navBarHeight = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
+                    int imeHeight = filter.calculateImeHeight(rawImeHeight, navBarHeight, resizeOnFullScreen);
                     DisplayMetrics dm = activity.getResources().getDisplayMetrics();
                     final float density = dm.density;
 
@@ -178,7 +182,9 @@ public class Keyboard {
                     WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(rootView);
                     if (insets == null) return;
                     boolean showingKeyboard = insets.isVisible(WindowInsetsCompat.Type.ime());
-                    int imeHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
+                    int rawImeHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
+                    int navBarHeight = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
+                    int imeHeight = filter.calculateImeHeight(rawImeHeight, navBarHeight, resizeOnFullScreen);
                     DisplayMetrics dm = activity.getResources().getDisplayMetrics();
                     final float density = dm.density;
 
