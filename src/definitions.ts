@@ -53,16 +53,17 @@ declare module '@capacitor/cli' {
       eventMode?: KeyboardEventMode;
 
       /**
-       * If true (default), the plugin will automatically subtract the Android Navigation Bar height
-       * from the reported keyboard height when resizeOnFullScreen is false.
-       * Set to false to disable this subtraction if you are manually handling Edge-to-Edge insets.
+       * How the plugin handles the Android Navigation Bar height when calculating the keyboard's intersection with the WebView.
+       * - 'auto': (Default) Subtracts the nav bar on Android 14 and below. Automatically ignores it on Android 15+ where Edge-to-Edge is enforced by the OS.
+       * - 'subtract': Always subtract the nav bar height (use if your app does NOT draw behind the nav bar).
+       * - 'ignore': Never subtract the nav bar height (use if your app ALWAYS draws behind the nav bar).
        *
        * Only available for Android
        *
        * @since 8.0.5
-       * @example false
+       * @example "auto"
        */
-      subtractNavigationBar?: boolean;
+      navigationBarInsets?: 'auto' | 'subtract' | 'ignore';
 
       /**
        * Controls how the keyboard backdrop color (the area visible behind the

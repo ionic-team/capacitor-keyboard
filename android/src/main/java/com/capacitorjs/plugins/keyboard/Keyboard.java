@@ -40,8 +40,8 @@ public class Keyboard {
 
     private final KeyboardHeightFilter filter = new KeyboardHeightFilter();
 
-    public void setSubtractNavigationBar(boolean subtractNavigationBar) {
-        this.subtractNavigationBar = subtractNavigationBar;
+    public void setNavigationBarInsets(String navigationBarInsets) {
+        this.navigationBarInsets = navigationBarInsets;
     }
 
     public void setEventMode(String modeStr) {
@@ -61,7 +61,7 @@ public class Keyboard {
     @Nullable
     private KeyboardEventListener keyboardEventListener;
     
-    private boolean subtractNavigationBar = true;
+    private String navigationBarInsets = "auto";
 
     static final String EVENT_KB_WILL_SHOW = "keyboardWillShow";
     static final String EVENT_KB_DID_SHOW = "keyboardDidShow";
@@ -72,6 +72,37 @@ public class Keyboard {
     public Keyboard(Bridge bridge, boolean resizeOnFullScreen) {
         this(bridge.getActivity(), resizeOnFullScreen);
         this.bridge = bridge;
+    }
+
+    // We may want to deprecate this constructor in the future, but we are keeping it now to keep backward compatibility with cap 7
+    private String getKeyboardId() {
+        if (activity == null) return "unknown";
+        try {
+            return android.provider.Settings.Secure.getString(activity.getContentResolver(), android.provider.Settings.Secure.DEFAULT_INPUT_METHOD);
+        } catch (Exception e) {
+            return "unknown";
+        }
+    }
+
+    static boolean isWindowEdgeToEdge(String navigationBarInsets, int sdkInt, int targetSdk) {
+        if ("ignore".equalsIgnoreCase(navigationBarInsets)) {
+            return true; // Never subtract (app always draws behind nav bar)
+        } else if ("subtract".equalsIgnoreCase(navigationBarInsets)) {
+            return false; // Always subtract (app does not draw behind nav bar)
+        }
+        
+        // "auto" (default)
+        // Starting in Android 15 (API 35), apps targeting SDK 35+ are forced into Edge-To-Edge by the OS.
+        // We dynamically detect this so a single APK works perfectly on both Android 13 (subtracted) and Android 16 (forced edge-to-edge).
+        if (sdkInt >= 35 && targetSdk >= 35) {
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isWindowEdgeToEdge() {
+        int targetSdk = activity != null ? activity.getApplicationInfo().targetSdkVersion : 0;
+        return isWindowEdgeToEdge(navigationBarInsets, Build.VERSION.SDK_INT, targetSdk);
     }
 
     // We may want to deprecate this constructor in the future, but we are keeping it now to keep backward compatibility with cap 7
@@ -87,16 +118,17 @@ public class Keyboard {
             if (rootInsets == null) return insets;
 
             boolean showingKeyboard = rootInsets.isVisible(WindowInsetsCompat.Type.ime());
-            int rawImeHeight = rootInsets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
-            int navBarHeight = rootInsets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
-            boolean ignoreNavBar = resizeOnFullScreen || !subtractNavigationBar;
+            int rawImeHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
+            int navBarHeight = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
+            boolean ignoreNavBar = resizeOnFullScreen || isWindowEdgeToEdge();
             int imeHeight = filter.calculateImeHeight(rawImeHeight, navBarHeight, ignoreNavBar);
             DisplayMetrics dm = activity.getResources().getDisplayMetrics();
             final float density = dm.density;
 
             int currentImeHeight = Math.round(imeHeight / density);
-            KeyboardHeightFilter.FilterResult result = filter.filterOnApplyWindowInsets(showingKeyboard, currentImeHeight, dm.widthPixels);
-            Log.i("Capacitor/Keyboard", "onApplyWindowInsets: showing=" + showingKeyboard + " rawHeight=" + currentImeHeight + " emit=" + result.emitHeight + " shouldEmit=" + result.shouldEmit);
+            String screenKey = getScreenKey();
+            KeyboardHeightFilter.FilterResult result = filter.filterOnApplyWindowInsets(showingKeyboard, currentImeHeight, screenKey);
+            Log.i("Capacitor/Keyboard", "onApplyWindowInsets: showing=" + showingKeyboard + " rawHeight=" + currentImeHeight + " emit=" + result.emitHeight + " shouldEmit=" + result.shouldEmit + " key=" + screenKey);
 
             if (result.shouldEmit && keyboardEventListener != null) {
                 if (showingKeyboard) {
@@ -159,7 +191,7 @@ public class Keyboard {
                     boolean showingKeyboard = insets.isVisible(WindowInsetsCompat.Type.ime());
                     int rawImeHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
                     int navBarHeight = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
-                    boolean ignoreNavBar = resizeOnFullScreen || !subtractNavigationBar;
+                    boolean ignoreNavBar = resizeOnFullScreen || isWindowEdgeToEdge();
                     int imeHeight = filter.calculateImeHeight(rawImeHeight, navBarHeight, ignoreNavBar);
                     DisplayMetrics dm = activity.getResources().getDisplayMetrics();
                     final float density = dm.density;
@@ -169,8 +201,9 @@ public class Keyboard {
                     }
 
                     int currentImeHeight = Math.round(imeHeight / density);
-                    KeyboardHeightFilter.FilterResult result = filter.filterOnStart(showingKeyboard, currentImeHeight, dm.widthPixels);
-                    Log.i("Capacitor/Keyboard", "onStart: showing=" + showingKeyboard + " rawHeight=" + currentImeHeight + " emit=" + result.emitHeight + " shouldEmit=" + result.shouldEmit);
+                    String screenKey = getScreenKey();
+                    KeyboardHeightFilter.FilterResult result = filter.filterOnStart(showingKeyboard, currentImeHeight, screenKey);
+                    Log.i("Capacitor/Keyboard", "onStart: showing=" + showingKeyboard + " rawHeight=" + currentImeHeight + " emit=" + result.emitHeight + " shouldEmit=" + result.shouldEmit + " key=" + screenKey);
 
                     if (result.shouldEmit && keyboardEventListener != null) {
                         if (showingKeyboard) {
@@ -192,14 +225,15 @@ public class Keyboard {
                     boolean showingKeyboard = insets.isVisible(WindowInsetsCompat.Type.ime());
                     int rawImeHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
                     int navBarHeight = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
-                    boolean ignoreNavBar = resizeOnFullScreen || !subtractNavigationBar;
+                    boolean ignoreNavBar = resizeOnFullScreen || isWindowEdgeToEdge();
                     int imeHeight = filter.calculateImeHeight(rawImeHeight, navBarHeight, ignoreNavBar);
                     DisplayMetrics dm = activity.getResources().getDisplayMetrics();
                     final float density = dm.density;
 
                     int currentImeHeight = Math.round(imeHeight / density);
-                    KeyboardHeightFilter.FilterResult result = filter.filterOnEnd(showingKeyboard, currentImeHeight, dm.widthPixels);
-                    Log.i("Capacitor/Keyboard", "onEnd: showing=" + showingKeyboard + " rawHeight=" + currentImeHeight + " emit=" + result.emitHeight + " shouldEmit=" + result.shouldEmit);
+                    String screenKey = getScreenKey();
+                    KeyboardHeightFilter.FilterResult result = filter.filterOnEnd(showingKeyboard, currentImeHeight, screenKey);
+                    Log.i("Capacitor/Keyboard", "onEnd: showing=" + showingKeyboard + " rawHeight=" + currentImeHeight + " emit=" + result.emitHeight + " shouldEmit=" + result.shouldEmit + " key=" + screenKey);
 
                     if (result.shouldEmit && keyboardEventListener != null) {
                         if (showingKeyboard) {
@@ -243,6 +277,11 @@ public class Keyboard {
             mChildOfContent.requestLayout();
             usableHeightPrevious = usableHeightNow;
         }
+    }
+
+    private String getScreenKey() {
+        DisplayMetrics dm = activity.getResources().getDisplayMetrics();
+        return dm.widthPixels + "x" + dm.heightPixels + "|" + getKeyboardId();
     }
 
     private int computeUsableHeight() {
