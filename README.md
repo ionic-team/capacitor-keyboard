@@ -97,6 +97,7 @@ the following events also work with `window.addEventListener`:
 <docgen-index>
 
 * [`show()`](#show)
+* [`setInputContext(...)`](#setinputcontext)
 * [`hide()`](#hide)
 * [`setAccessoryBarVisible(...)`](#setaccessorybarvisible)
 * [`setScroll(...)`](#setscroll)
@@ -127,6 +128,22 @@ Show the keyboard.
 This method is only supported on Android.
 
 **Since:** 1.0.0
+
+--------------------
+
+
+### setInputContext(...)
+
+```typescript
+setInputContext(options: { context: string; }) => Promise<void>
+```
+
+Internal method used to inform the native plugin of the currently focused input context.
+Do not call this directly; it is managed automatically.
+
+| Param         | Type                              |
+| ------------- | --------------------------------- |
+| **`options`** | <code>{ context: string; }</code> |
 
 --------------------
 

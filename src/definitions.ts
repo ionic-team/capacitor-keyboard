@@ -186,6 +186,13 @@ export interface KeyboardPlugin {
   show(): Promise<void>;
 
   /**
+   * Internal method used to inform the native plugin of the currently focused input context.
+   * Do not call this directly; it is managed automatically.
+   * @internal
+   */
+  setInputContext(options: { context: string }): Promise<void>;
+
+  /**
    * Hide the keyboard.
    *
    * @since 1.0.0

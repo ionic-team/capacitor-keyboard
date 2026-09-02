@@ -48,6 +48,21 @@ public class KeyboardPlugin extends Plugin {
         });
     }
 
+    /**
+     * Web side reports the focused element's input context (e.g. "text", "numeric", "email").
+     * IMEs use different layouts (and heights) per input type, so the height cache is keyed by it.
+     */
+    @PluginMethod
+    public void setInputContext(PluginCall call) {
+        String context = call.getString("context", "");
+        execute(() -> {
+            if (implementation != null) {
+                implementation.setInputContext(context);
+            }
+            call.resolve();
+        });
+    }
+
     @PluginMethod
     public void setAccessoryBarVisible(PluginCall call) {
         call.unimplemented();
