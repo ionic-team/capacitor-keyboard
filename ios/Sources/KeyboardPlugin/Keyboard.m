@@ -223,6 +223,9 @@ double stageManagerOffset;
 
 - (void)onKeyboardWillShow:(NSNotification *)notification
 {
+  // Macs have no virtual keyboard, but UIKit still posts these notifications with a bogus frame
+  if (NSProcessInfo.processInfo.isiOSAppOnMac) return;
+
   if (hideTimer != nil) {
     [hideTimer invalidate];
   }
@@ -266,6 +269,8 @@ double stageManagerOffset;
 
 - (void)onKeyboardDidShow:(NSNotification *)notification
 {
+  if (NSProcessInfo.processInfo.isiOSAppOnMac) return;
+
   CGRect rect = [[notification.userInfo valueForKey:UIKeyboardFrameEndUserInfoKey] CGRectValue];
   double height = rect.size.height;
 
