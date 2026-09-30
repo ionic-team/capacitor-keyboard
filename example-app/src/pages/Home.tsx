@@ -190,6 +190,8 @@ const KeyboardPage: React.FC = () => {
         </IonButton>
         <IonInput ref={inputRef} placeholder="Enter Input First"></IonInput>
         <IonInput ref={inputRefSecond} placeholder="Enter Input Second"></IonInput>
+        <IonInput type="email" autocomplete="username" placeholder="Username (AutoFill)"></IonInput>
+        <IonInput type="password" autocomplete="current-password" placeholder="Password (AutoFill)"></IonInput>
         <IonText>
           <h2>keyboardWillShow: {keyboardWillShowCounter}</h2>
         </IonText>
