@@ -200,6 +200,7 @@ double stageManagerOffset;
   [nc removeObserver:self.webView name:UIKeyboardDidChangeFrameNotification object:nil];
 
   [self updateBackdropColor];
+  [KeyboardPlugin steadyAutofillBar];
 }
 
 #pragma mark Keyboard events
@@ -365,6 +366,69 @@ double stageManagerOffset;
   [self resetScrollView];
 }
 
+
+#pragma mark Steady AutoFill bar
+
+// In a WKWebView, UIKit sets an empty suggestion list on every keystroke in a
+// username or password field, then puts the AutoFill "Passwords" key back
+// about 10 ms later; a frame drawn in between blinks the bar. Native text
+// fields and Safari never set the empty list. While the bar shows an AutoFill
+// key, an empty list is held for 100 ms: the next list replaces it, or it is
+// applied late. A nil list (the keyboard going away) is never held. Without
+// the private class or selectors (another iOS), nothing changes.
+static NSUInteger autofillListGeneration;
+static BOOL showingAutofillList;
+
+static NSArray *autocorrectionPredictions(id list) {
+  if (![list respondsToSelector:NSSelectorFromString(@"predictions")]) return nil;
+  id predictions = [list valueForKey:@"predictions"];
+  return [predictions isKindOfClass:[NSArray class]] ? predictions : nil;
+}
+
+// No predictions (nil or none) and no correction. The empty list UIKit sets
+// has nil predictions in some pages and an empty array in others.
+static BOOL autocorrectionListIsEmpty(id list) {
+  if (list == nil || ![list respondsToSelector:NSSelectorFromString(@"predictions")]) return NO;
+  if ([list respondsToSelector:NSSelectorFromString(@"corrections")] && [list valueForKey:@"corrections"] != nil) return NO;
+  return autocorrectionPredictions(list).count == 0;
+}
+
+static BOOL autocorrectionListHasAutofill(id list) {
+  SEL isAutofill = NSSelectorFromString(@"isAutofillCandidate");
+  for (id candidate in autocorrectionPredictions(list)) {
+    if ([candidate respondsToSelector:isAutofill] && [[candidate valueForKey:@"isAutofillCandidate"] boolValue]) {
+      return YES;
+    }
+  }
+  return NO;
+}
+
++ (void)steadyAutofillBar
+{
+  static dispatch_once_t once;
+  dispatch_once(&once, ^{
+    Class controllerClass = NSClassFromString([@[@"UIKeyboard", @"Autocorrection", @"Controller"] componentsJoinedByString:@""]);
+    SEL setList = NSSelectorFromString([@[@"setAutocorrection", @"List:"] componentsJoinedByString:@""]);
+    Method method = class_getInstanceMethod(controllerClass, setList);
+    if (method == NULL) return;
+    void (*original)(id, SEL, id) = (void (*)(id, SEL, id))method_getImplementation(method);
+    IMP newImp = imp_implementationWithBlock(^(id controller, id list) {
+      autofillListGeneration++;
+      if (showingAutofillList && autocorrectionListIsEmpty(list)) {
+        NSUInteger held = autofillListGeneration;
+        dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.1 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+          if (held != autofillListGeneration) return;
+          showingAutofillList = NO;
+          original(controller, setList, list);
+        });
+        return;
+      }
+      showingAutofillList = autocorrectionListHasAutofill(list);
+      original(controller, setList, list);
+    });
+    method_setImplementation(method, newImp);
+  });
+}
 
 #pragma mark HideFormAccessoryBar
 
