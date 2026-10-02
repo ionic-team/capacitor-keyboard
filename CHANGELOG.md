@@ -1,3 +1,10 @@
+## [8.0.6](https://github.com/ionic-team/capacitor-keyboard/compare/v8.0.5...v8.0.6) (2026-10-02)
+
+
+### Bug Fixes
+
+* **ios:** silence the protocol property synthesis warnings in Keyboard.m ([#83](https://github.com/ionic-team/capacitor-keyboard/issues/83)) ([f28aef4](https://github.com/ionic-team/capacitor-keyboard/commit/f28aef4ed8736865232ed0595412e07d2372e024))
+
 ## [8.0.5](https://github.com/ionic-team/capacitor-keyboard/compare/v8.0.4...v8.0.5) (2026-06-16)
 
 
