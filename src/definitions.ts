@@ -43,6 +43,29 @@ declare module '@capacitor/cli' {
       resizeOnFullScreen?: boolean;
 
       /**
+       * The event mode determines how the plugin emits lifecycle events during keyboard animations.
+       *
+       * Only available for Android
+       *
+       * @since 8.0.5
+       * @example "LAST_KNOWN"
+       */
+      eventMode?: KeyboardEventMode;
+
+      /**
+       * How the plugin handles the Android Navigation Bar height when calculating the keyboard's intersection with the WebView.
+       * - 'auto': (Default) Subtracts the nav bar on Android 14 and below. Automatically ignores it on Android 15+ where Edge-to-Edge is enforced by the OS.
+       * - 'subtract': Always subtract the nav bar height (use if your app does NOT draw behind the nav bar).
+       * - 'ignore': Never subtract the nav bar height (use if your app ALWAYS draws behind the nav bar).
+       *
+       * Only available for Android
+       *
+       * @since 8.0.5
+       * @example "auto"
+       */
+      navigationBarInsets?: 'auto' | 'subtract' | 'ignore';
+
+      /**
        * Controls how the keyboard backdrop color (the area visible behind the
        * keyboard) is set every time the keyboard is about to show.
        *
@@ -63,6 +86,8 @@ declare module '@capacitor/cli' {
     };
   }
 }
+
+export type KeyboardEventMode = 'DEFAULT' | 'LAST_KNOWN';
 
 export interface KeyboardInfo {
   /**
@@ -159,6 +184,13 @@ export interface KeyboardPlugin {
    * @since 1.0.0
    */
   show(): Promise<void>;
+
+  /**
+   * Internal method used to inform the native plugin of the currently focused input context.
+   * Do not call this directly; it is managed automatically.
+   * @internal
+   */
+  setInputContext(options: { context: string }): Promise<void>;
 
   /**
    * Hide the keyboard.
