@@ -45,6 +45,7 @@ typedef enum : NSUInteger {
 
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wprotocol"
+#pragma clang diagnostic ignored "-Wobjc-protocol-property-synthesis"
 // suppressing warnings of the type: "Class 'KeyboardPlugin' does not conform to protocol 'CAPBridgedPlugin'"
 // protocol conformance for this class is implemented by a macro and clang isn't detecting that
 @implementation KeyboardPlugin
