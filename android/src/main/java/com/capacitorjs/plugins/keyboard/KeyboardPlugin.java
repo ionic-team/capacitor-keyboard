@@ -17,7 +17,11 @@ public class KeyboardPlugin extends Plugin {
     public void load() {
         execute(() -> {
             boolean resizeOnFullScreen = getConfig().getBoolean("resizeOnFullScreen", false);
+            String navigationBarInsets = getConfig().getString("navigationBarInsets", "auto");
+            String eventMode = getConfig().getString("eventMode", "DEFAULT");
             implementation = new Keyboard(getBridge(), resizeOnFullScreen);
+            implementation.setEventMode(eventMode);
+            implementation.setNavigationBarInsets(navigationBarInsets);
 
             implementation.setKeyboardEventListener(this::onKeyboardEvent);
         });
@@ -41,6 +45,21 @@ public class KeyboardPlugin extends Plugin {
             } else {
                 call.resolve();
             }
+        });
+    }
+
+    /**
+     * Web side reports the focused element's input context (e.g. "text", "numeric", "email").
+     * IMEs use different layouts (and heights) per input type, so the height cache is keyed by it.
+     */
+    @PluginMethod
+    public void setInputContext(PluginCall call) {
+        String context = call.getString("context", "");
+        execute(() -> {
+            if (implementation != null) {
+                implementation.setInputContext(context);
+            }
+            call.resolve();
         });
     }
 
