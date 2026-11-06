@@ -1,3 +1,10 @@
+# [9.0.0-next.2](https://github.com/ionic-team/capacitor-keyboard/compare/v9.0.0-next.1...v9.0.0-next.2) (2026-11-06)
+
+
+### Bug Fixes
+
+* native android publishing compatibility with Gradle 9 / AGP 9 ([#93](https://github.com/ionic-team/capacitor-keyboard/issues/93)) ([a3ceeab](https://github.com/ionic-team/capacitor-keyboard/commit/a3ceeab087235c049831e027e8f3c792d1310a99))
+
 # [9.0.0-next.1](https://github.com/ionic-team/capacitor-keyboard/compare/v8.0.5...v9.0.0-next.1) (2026-08-04)
 
 
