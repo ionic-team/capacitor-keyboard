@@ -1,3 +1,10 @@
+# [9.0.0-next.3](https://github.com/ionic-team/capacitor-keyboard/compare/v9.0.0-next.2...v9.0.0-next.3) (2026-11-20)
+
+
+### Bug Fixes
+
+* **android:** avoid implicit parent project property lookup deprecated in Gradle 9 ([#97](https://github.com/ionic-team/capacitor-keyboard/issues/97)) ([2b7ce97](https://github.com/ionic-team/capacitor-keyboard/commit/2b7ce9773aae47e87b750db7ac7e6b04ad9990b0))
+
 # [9.0.0-next.2](https://github.com/ionic-team/capacitor-keyboard/compare/v9.0.0-next.1...v9.0.0-next.2) (2026-11-06)
 
 
