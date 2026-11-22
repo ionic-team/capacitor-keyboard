@@ -4,6 +4,7 @@ import android.content.Context;
 import android.graphics.Rect;
 import android.os.Build;
 import android.util.DisplayMetrics;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.View;
 import android.view.Window;
@@ -28,9 +29,70 @@ public class Keyboard {
     private Bridge bridge;
     private AppCompatActivity activity;
     private View rootView;
+    private boolean resizeOnFullScreen;
     private int usableHeightPrevious;
     private FrameLayout.LayoutParams frameLayoutParams;
     private View mChildOfContent;
+
+    public enum EventMode {
+        DEFAULT,
+        LAST_KNOWN
+    }
+
+    private final KeyboardHeightFilter filter = new KeyboardHeightFilter();
+    // Delay before re-checking a clamped, non-animated IME height change (e.g. type-mode switch).
+    private static final long PENDING_HEIGHT_CONFIRM_DELAY_MS = 0;
+    private Runnable pendingHeightCheck;
+
+    private void schedulePendingHeightCheck(long delayMs, boolean resizeOnFullScreen, float density) {
+        if (pendingHeightCheck != null) {
+            rootView.removeCallbacks(pendingHeightCheck);
+            pendingHeightCheck = null;
+        }
+        pendingHeightCheck = () -> {
+            pendingHeightCheck = null;
+            WindowInsetsCompat nowInsets = ViewCompat.getRootWindowInsets(rootView);
+            if (nowInsets == null) return;
+            boolean nowShowing = nowInsets.isVisible(WindowInsetsCompat.Type.ime());
+            int nowRaw = nowInsets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
+            int nowNav = nowInsets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
+            int nowHeight = Math.round(filter.calculateImeHeight(nowRaw, nowNav, resizeOnFullScreen || isWindowEdgeToEdge()) / density);
+            String nowKey = getScreenKey();
+            KeyboardHeightFilter.FilterResult confirm = filter.confirmPendingHeight(nowShowing, nowHeight, nowKey);
+            Log.i(
+                "Capacitor/Keyboard",
+                "confirmPendingHeight: showing=" +
+                    nowShowing +
+                    " rawHeight=" +
+                    nowHeight +
+                    " emit=" +
+                    confirm.emitHeight +
+                    " shouldEmit=" +
+                    confirm.shouldEmit +
+                    " key=" +
+                    nowKey
+            );
+            if (confirm.shouldEmit && keyboardEventListener != null) {
+                keyboardEventListener.onKeyboardEvent(EVENT_KB_WILL_SHOW, confirm.emitHeight);
+                keyboardEventListener.onKeyboardEvent(EVENT_KB_DID_SHOW, confirm.emitHeight);
+            }
+        };
+        rootView.postDelayed(pendingHeightCheck, delayMs);
+    }
+
+    public void setNavigationBarInsets(String navigationBarInsets) {
+        this.navigationBarInsets = navigationBarInsets;
+    }
+
+    public void setEventMode(String modeStr) {
+        if (modeStr != null) {
+            try {
+                filter.setEventMode(EventMode.valueOf(modeStr.toUpperCase()));
+            } catch (IllegalArgumentException e) {
+                filter.setEventMode(EventMode.DEFAULT);
+            }
+        }
+    }
 
     public void setKeyboardEventListener(@Nullable KeyboardEventListener keyboardEventListener) {
         this.keyboardEventListener = keyboardEventListener;
@@ -38,6 +100,54 @@ public class Keyboard {
 
     @Nullable
     private KeyboardEventListener keyboardEventListener;
+
+    private String navigationBarInsets = "auto";
+    // Input context of the focused web element (inputmode/type), reported by the web side.
+    private volatile String inputContext = "";
+
+    public void setInputContext(String inputContext) {
+        String value = inputContext == null ? "" : inputContext;
+        boolean changed = !value.equals(this.inputContext);
+        Log.i("Capacitor/Keyboard", "setInputContext: " + value + (changed ? "" : " (unchanged)"));
+        this.inputContext = value;
+        if (changed && rootView != null) {
+            // Insets must be read on the UI thread; the plugin call arrives on the bridge executor.
+            rootView.post(this::reevaluateAfterInputContextChange);
+        }
+    }
+
+    /**
+     * If a show animation is already running, onStart clamped its height against the previous
+     * input context's cache. Re-key with the new context and correct keyboardWillShow if needed.
+     */
+    private void reevaluateAfterInputContextChange() {
+        WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(rootView);
+        if (insets == null) return;
+        boolean showingKeyboard = insets.isVisible(WindowInsetsCompat.Type.ime());
+        int rawImeHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
+        int navBarHeight = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
+        boolean ignoreNavBar = resizeOnFullScreen || isWindowEdgeToEdge();
+        float density = activity.getResources().getDisplayMetrics().density;
+        int currentImeHeight = Math.round(filter.calculateImeHeight(rawImeHeight, navBarHeight, ignoreNavBar) / density);
+        String screenKey = getScreenKey();
+        KeyboardHeightFilter.FilterResult result = filter.filterOnInputContextChanged(showingKeyboard, currentImeHeight, screenKey);
+        Log.i(
+            "Capacitor/Keyboard",
+            "onInputContextChanged: showing=" +
+                showingKeyboard +
+                " rawHeight=" +
+                currentImeHeight +
+                " emit=" +
+                result.emitHeight +
+                " shouldEmit=" +
+                result.shouldEmit +
+                " key=" +
+                screenKey
+        );
+        if (result.shouldEmit && keyboardEventListener != null) {
+            keyboardEventListener.onKeyboardEvent(EVENT_KB_WILL_SHOW, result.emitHeight);
+        }
+    }
 
     static final String EVENT_KB_WILL_SHOW = "keyboardWillShow";
     static final String EVENT_KB_DID_SHOW = "keyboardDidShow";
@@ -51,8 +161,43 @@ public class Keyboard {
     }
 
     // We may want to deprecate this constructor in the future, but we are keeping it now to keep backward compatibility with cap 7
+    private String getKeyboardId() {
+        if (activity == null) return "unknown";
+        try {
+            return android.provider.Settings.Secure.getString(
+                activity.getContentResolver(),
+                android.provider.Settings.Secure.DEFAULT_INPUT_METHOD
+            );
+        } catch (Exception e) {
+            return "unknown";
+        }
+    }
+
+    static boolean isWindowEdgeToEdge(String navigationBarInsets, int sdkInt, int targetSdk) {
+        if ("ignore".equalsIgnoreCase(navigationBarInsets)) {
+            return true; // Never subtract (app always draws behind nav bar)
+        } else if ("subtract".equalsIgnoreCase(navigationBarInsets)) {
+            return false; // Always subtract (app does not draw behind nav bar)
+        }
+
+        // "auto" (default)
+        // Starting in Android 15 (API 35), apps targeting SDK 35+ are forced into Edge-To-Edge by the OS.
+        // We dynamically detect this so a single APK works perfectly on both Android 13 (subtracted) and Android 16 (forced edge-to-edge).
+        if (sdkInt >= 35 && targetSdk >= 35) {
+            return true;
+        }
+        return false;
+    }
+
+    private boolean isWindowEdgeToEdge() {
+        int targetSdk = activity != null ? activity.getApplicationInfo().targetSdkVersion : 0;
+        return isWindowEdgeToEdge(navigationBarInsets, Build.VERSION.SDK_INT, targetSdk);
+    }
+
+    // We may want to deprecate this constructor in the future, but we are keeping it now to keep backward compatibility with cap 7
     public Keyboard(AppCompatActivity activity, boolean resizeOnFullScreen) {
         this.activity = activity;
+        this.resizeOnFullScreen = resizeOnFullScreen;
 
         //http://stackoverflow.com/a/4737265/1091751 detect if keyboard is showing
         FrameLayout content = activity.getWindow().getDecorView().findViewById(android.R.id.content);
@@ -63,25 +208,86 @@ public class Keyboard {
             if (rootInsets == null) return insets;
 
             boolean showingKeyboard = rootInsets.isVisible(WindowInsetsCompat.Type.ime());
+            int rawImeHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
+            int navBarHeight = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
+            boolean ignoreNavBar = resizeOnFullScreen || isWindowEdgeToEdge();
+            int imeHeight = filter.calculateImeHeight(rawImeHeight, navBarHeight, ignoreNavBar);
+            DisplayMetrics dm = activity.getResources().getDisplayMetrics();
+            final float density = dm.density;
 
-            if (resizeOnFullScreen) {
-                possiblyResizeChildOfContent(showingKeyboard);
+            int currentImeHeight = Math.round(imeHeight / density);
+            String screenKey = getScreenKey();
+            KeyboardHeightFilter.FilterResult result = filter.filterOnApplyWindowInsets(showingKeyboard, currentImeHeight, screenKey);
+            Log.i(
+                "Capacitor/Keyboard",
+                "onApplyWindowInsets: showing=" +
+                    showingKeyboard +
+                    " rawHeight=" +
+                    currentImeHeight +
+                    " emit=" +
+                    result.emitHeight +
+                    " shouldEmit=" +
+                    result.shouldEmit +
+                    " pending=" +
+                    result.pendingHeight +
+                    " key=" +
+                    screenKey
+            );
+
+            if (result.pendingHeight > 0) {
+                schedulePendingHeightCheck(PENDING_HEIGHT_CONFIRM_DELAY_MS, resizeOnFullScreen, density);
+            } else if (pendingHeightCheck != null && (!showingKeyboard || result.shouldEmit)) {
+                rootView.removeCallbacks(pendingHeightCheck);
+                pendingHeightCheck = null;
             }
 
-            v.onApplyWindowInsets(insets.toWindowInsets());
+            if (result.shouldEmit && keyboardEventListener != null) {
+                if (showingKeyboard) {
+                    keyboardEventListener.onKeyboardEvent(EVENT_KB_WILL_SHOW, result.emitHeight);
+                    keyboardEventListener.onKeyboardEvent(EVENT_KB_DID_SHOW, result.emitHeight);
+                } else {
+                    keyboardEventListener.onKeyboardEvent(EVENT_KB_WILL_HIDE, 0);
+                    keyboardEventListener.onKeyboardEvent(EVENT_KB_DID_HIDE, 0);
+                }
+            }
 
-            return insets;
+            if (showingKeyboard && resizeOnFullScreen) {
+                possiblyResizeChildOfContent(true);
+            } else if (!showingKeyboard && resizeOnFullScreen) {
+                possiblyResizeChildOfContent(false);
+            }
+
+            WindowInsetsCompat insetsToApply = insets;
+            if (!resizeOnFullScreen) {
+                insetsToApply = new WindowInsetsCompat.Builder(insets)
+                    .setInsets(WindowInsetsCompat.Type.ime(), androidx.core.graphics.Insets.NONE)
+                    .build();
+            }
+
+            return ViewCompat.onApplyWindowInsets(v, insetsToApply);
         });
 
         ViewCompat.setWindowInsetsAnimationCallback(
             rootView,
             new WindowInsetsAnimationCompat.Callback(WindowInsetsAnimationCompat.Callback.DISPATCH_MODE_STOP) {
+                @Override
+                public void onPrepare(@NonNull WindowInsetsAnimationCompat animation) {
+                    Log.i("Capacitor/Keyboard", "onPrepareAnimation");
+                    filter.onPrepareAnimation();
+                    super.onPrepare(animation);
+                }
+
                 @NonNull
                 @Override
                 public WindowInsetsCompat onProgress(
                     @NonNull WindowInsetsCompat insets,
                     @NonNull List<WindowInsetsAnimationCompat> runningAnimations
                 ) {
+                    if (!resizeOnFullScreen) {
+                        return new WindowInsetsCompat.Builder(insets)
+                            .setInsets(WindowInsetsCompat.Type.ime(), androidx.core.graphics.Insets.NONE)
+                            .build();
+                    }
                     return insets;
                 }
 
@@ -94,7 +300,10 @@ public class Keyboard {
                     WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(rootView);
                     if (insets == null) return super.onStart(animation, bounds);
                     boolean showingKeyboard = insets.isVisible(WindowInsetsCompat.Type.ime());
-                    int imeHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
+                    int rawImeHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
+                    int navBarHeight = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
+                    boolean ignoreNavBar = resizeOnFullScreen || isWindowEdgeToEdge();
+                    int imeHeight = filter.calculateImeHeight(rawImeHeight, navBarHeight, ignoreNavBar);
                     DisplayMetrics dm = activity.getResources().getDisplayMetrics();
                     final float density = dm.density;
 
@@ -102,28 +311,71 @@ public class Keyboard {
                         possiblyResizeChildOfContent(showingKeyboard);
                     }
 
-                    if (showingKeyboard) {
-                        keyboardEventListener.onKeyboardEvent(EVENT_KB_WILL_SHOW, Math.round(imeHeight / density));
-                    } else {
-                        keyboardEventListener.onKeyboardEvent(EVENT_KB_WILL_HIDE, 0);
+                    int currentImeHeight = Math.round(imeHeight / density);
+                    String screenKey = getScreenKey();
+                    KeyboardHeightFilter.FilterResult result = filter.filterOnStart(showingKeyboard, currentImeHeight, screenKey);
+                    Log.i(
+                        "Capacitor/Keyboard",
+                        "onStart: showing=" +
+                            showingKeyboard +
+                            " rawHeight=" +
+                            currentImeHeight +
+                            " emit=" +
+                            result.emitHeight +
+                            " shouldEmit=" +
+                            result.shouldEmit +
+                            " key=" +
+                            screenKey
+                    );
+
+                    if (result.shouldEmit && keyboardEventListener != null) {
+                        if (showingKeyboard) {
+                            keyboardEventListener.onKeyboardEvent(EVENT_KB_WILL_SHOW, result.emitHeight);
+                        } else {
+                            keyboardEventListener.onKeyboardEvent(EVENT_KB_WILL_HIDE, 0);
+                        }
                     }
+
                     return super.onStart(animation, bounds);
                 }
 
                 @Override
                 public void onEnd(@NonNull WindowInsetsAnimationCompat animation) {
                     super.onEnd(animation);
+
                     WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(rootView);
                     if (insets == null) return;
                     boolean showingKeyboard = insets.isVisible(WindowInsetsCompat.Type.ime());
-                    int imeHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
+                    int rawImeHeight = insets.getInsets(WindowInsetsCompat.Type.ime()).bottom;
+                    int navBarHeight = insets.getInsets(WindowInsetsCompat.Type.navigationBars()).bottom;
+                    boolean ignoreNavBar = resizeOnFullScreen || isWindowEdgeToEdge();
+                    int imeHeight = filter.calculateImeHeight(rawImeHeight, navBarHeight, ignoreNavBar);
                     DisplayMetrics dm = activity.getResources().getDisplayMetrics();
                     final float density = dm.density;
 
-                    if (showingKeyboard) {
-                        keyboardEventListener.onKeyboardEvent(EVENT_KB_DID_SHOW, Math.round(imeHeight / density));
-                    } else {
-                        keyboardEventListener.onKeyboardEvent(EVENT_KB_DID_HIDE, 0);
+                    int currentImeHeight = Math.round(imeHeight / density);
+                    String screenKey = getScreenKey();
+                    KeyboardHeightFilter.FilterResult result = filter.filterOnEnd(showingKeyboard, currentImeHeight, screenKey);
+                    Log.i(
+                        "Capacitor/Keyboard",
+                        "onEnd: showing=" +
+                            showingKeyboard +
+                            " rawHeight=" +
+                            currentImeHeight +
+                            " emit=" +
+                            result.emitHeight +
+                            " shouldEmit=" +
+                            result.shouldEmit +
+                            " key=" +
+                            screenKey
+                    );
+
+                    if (result.shouldEmit && keyboardEventListener != null) {
+                        if (showingKeyboard) {
+                            keyboardEventListener.onKeyboardEvent(EVENT_KB_DID_SHOW, result.emitHeight);
+                        } else {
+                            keyboardEventListener.onKeyboardEvent(EVENT_KB_DID_HIDE, 0);
+                        }
                     }
                 }
             }
@@ -160,6 +412,15 @@ public class Keyboard {
             mChildOfContent.requestLayout();
             usableHeightPrevious = usableHeightNow;
         }
+    }
+
+    private String getScreenKey() {
+        DisplayMetrics dm = activity.getResources().getDisplayMetrics();
+        String key = dm.widthPixels + "x" + dm.heightPixels + "|" + getKeyboardId();
+        if (!inputContext.isEmpty()) {
+            key += "|" + inputContext;
+        }
+        return key;
     }
 
     private int computeUsableHeight() {
